@@ -48,8 +48,8 @@ export class ranked extends React.Component {
 				React.createElement("article", {}, 'time control: fixed time'),
 				React.createElement("article", {}, 'time : 90 seconds'),
 				React.createElement("article", {}, 'moves counter : 5'),
-				React.createElement("article", {}, 'malus : 14'),
-				React.createElement("article", {}, 'tableau : 6'),
+				React.createElement("article", {}, 'malus : 12'),
+				React.createElement("article", {}, 'tableau : 7'),
 				React.createElement("article", {}, '\u00A0'),
 			),
 			React.createElement('button', {

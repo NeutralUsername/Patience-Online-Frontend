@@ -260,7 +260,7 @@ export class game extends React.Component {
 		}
 
 		if (! (this.state.turn=== "red" && data.a[2]+data.a[3] === "rd") && ! (this.state.turn=== "black" && data.a[2]+data.a[3] === "bd") ) {
-			if(!action[0].includes("stock") && !action[1].includes("foundation"))
+			if(!(action[0].includes("stock") && action[1].includes("tableau")) && !action[1].includes("foundation"))
 				this.state.moves_counter = this.state.moves_counter-1
 		}
 		if ( (this.state.turn=== "red" && data.a[2]+data.a[3] === "rd") || (this.state.turn=== "black" && data.a[2]+data.a[3] === "bd") ) {
@@ -352,17 +352,6 @@ export class game extends React.Component {
 	}
 
 	drag_event(event) {
-		if(this.state.ghost_dragging) {
-			document.getElementById(PON_from_card(this.state.ghost_dragging)).style.opacity = "1"
-			this.setState({ghost_dragging : false})
-		}
-		if(this.state.game_states.length > 0) {
-			this.setState(game_from_PON(this.state.game_states[this.state.game_states.length-1]))
-		}
-		else this.setState(game_from_PON(this.props.game_PON))
-		for(var c of this.state.ghost_cards)
-			document.getElementById(c).style.opacity = 1
-		this.state.ghost_cards.length = 0
 		if (event.type === "dragenter") {
 			drag_counter++
 		}
@@ -412,7 +401,7 @@ export class game extends React.Component {
 	}
 
 	is_valid_drop(from_card, to_stack) {
-		if (!from_card || !to_stack)
+		if (! (from_card && to_stack))
 			return false
 		if (this.state[to_stack].length > 0)
 			var to_card = this.state[to_stack][this.state[to_stack].length - 1]
@@ -421,21 +410,24 @@ export class game extends React.Component {
 		if (to_stack.includes("reserve")) {
 			if(from_card.name.includes("malus"))
 				return false
-			if (to_card && to_stack.includes("reserve"))
+			if (to_card)
 				return false
-			if (to_stack.includes("reserve") && !to_stack.includes(this.state.turn))
+			if (!to_stack.includes(this.state.turn))
 				return false
 			return true
 		}
 		if (to_stack.includes("stock"))
 			return false
 		if (to_stack.includes("discard")) {
-			if(to_stack.includes(this.state.turn))
-				return true
+			if(  to_stack.includes(this.state.turn))
+				if(from_card.name != this.state.turn+"malus")
+					return true
+				else
+					return false
 			if ( this.state.turn_counter === 0) 
 				return false
-			if( from_card.name.includes("foundation"))
-				return false
+			if(! (from_card.name.includes("reserve") || from_card.name.includes("malus") || from_card.name.includes("stock")))
+					return false
 			if(from_card.suit != to_card.suit && to_card.value === from_card.value)
 				return true
 			if (from_card.suit === to_card.suit) {
@@ -450,7 +442,7 @@ export class game extends React.Component {
 		if (to_stack.includes("malus")) {
 			if ( ! to_stack.includes(this.state.turn) && this.state.turn_counter === 0) 
 				return false
-			if( from_card.name.includes("foundation"))
+			if(! (from_card.name.includes("reserve") || from_card.name.includes("malus") || from_card.name.includes("stock")))
 				return false
 			if (to_card === undefined) 
 				return true
@@ -524,7 +516,7 @@ export class game extends React.Component {
 
 			if(this.state.ghost_dragging && this.is_valid_drop(this.state.ghost_dragging, stack_name)) {
 				if(stack_name != this.state.color+"discard")
-					return "#C3D7FA"
+					return "#cbdbf7"
 				else
 					return "#B9C2D0"
 			}
@@ -687,6 +679,27 @@ export class game extends React.Component {
 								this.setState(game_from_PON(this.props.game_PON))
 						}
 						else this.setState(game_from_PON(this.props.game_PON))
+						
+						if (!this.props.analysis_board) {
+							var val = (new Date() - this.state.last_action) / 1000
+							this.setState({
+								["timer_" + this.state.turn]: this.state["timer_" + this.state.turn] 
+							})
+							if (this.state.time_control === "hourglass") {
+								this.setState({
+									["timer_" + (this.state.turn === "red" ? "black" : "red")]: this.state["timer_" + (this.state.turn === "red" ? "black" : "red")] + val
+								})
+							}
+						} else {
+							this.setState({
+								["timer_" + this.state.turn]: this.state.actions[this.state.actions.length - 1]["timer_" + this.state.turn]
+							})
+							if (this.state.time_control === "hourglass")
+								this.setState({
+									["timer_" + (this.state.turn === "red" ? "black" : "red")]: this.state.actions[this.state.actions.length - 1]["timer_" + (this.state.turn === "red" ? "black" : "red")]
+								})
+						}
+
 						for(var c of this.state.ghost_cards) {
 							if(document.getElementById(c) )
 								document.getElementById(c).style.opacity = 1

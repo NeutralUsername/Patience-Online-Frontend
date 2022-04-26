@@ -86,16 +86,15 @@ function valid_d(game, from_stack, from_card, to_stack) {
 	if (! (from_card && to_stack))
 		return false
  	if(to_stack.includes("tableau") && game[from_stack].length === 1 && game[to_stack].length === 0) return false
-	if(from_stack.includes("foundation") && to_stack.includes("foundation")) return false
 	if (game[to_stack].length > 0)
 		var to_card = game[to_stack][game[to_stack].length-1]
 
 	if (to_stack.includes("reserve")) {
-		if(from_stack.includes("malus"))
+		if(from_stack.includes("malus") )
 			return false
-		if (to_card && to_stack.includes("reserve"))
+		if (to_card)
 			return false
-		if (to_stack.includes("reserve") && !to_stack.includes(game.turn))
+		if ( !to_stack.includes(game.turn))
 			return false
 		return true
 	}
@@ -103,11 +102,14 @@ function valid_d(game, from_stack, from_card, to_stack) {
 		return false
 	if (to_stack.includes("discard")) {
 		if(to_stack.includes(game.turn))
-			return true
+			if( ! (from_stack === game.turn+"malus"))
+				return true
+			else
+				return false
 		if (game[game.turn+"discard"].length === 0) 
 			return false
-		if( from_stack.includes("foundation"))
-			return false
+		if(! (from_stack.includes("reserve") || from_stack.includes("malus") || from_stack.includes("stock")))
+					return false
 		if(from_card.suit != to_card.suit && to_card.value === from_card.value)
 			return true
 		if (from_card.suit === to_card.suit) {
@@ -119,11 +121,10 @@ function valid_d(game, from_stack, from_card, to_stack) {
 		}
 		return false
 	}
-
 	if (to_stack.includes("malus")) {
 		if(! to_stack.includes(game.turn) && game[game.turn+"discard"].length === 0) 
 			return false
-		if( from_stack.includes("foundation"))
+		if(! (from_stack.includes("reserve") || from_stack.includes("malus") || from_stack.includes("stock")))
 			return false
 		if (to_card === undefined) 
 			return true
@@ -139,6 +140,8 @@ function valid_d(game, from_stack, from_card, to_stack) {
 		return false
 	}
 	if (to_stack.includes("foundation")) {
+		if(from_stack.includes("foundation"))
+			return false
 		if (to_card != undefined) {
 			if (from_card.suit === to_card.suit)
 				if (from_card.value - 1 === to_card.value)
