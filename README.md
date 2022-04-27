@@ -1,7 +1,7 @@
 # Patience-Online-Frontend
 https://patienceonline.com/
 
-# The goal of the game is to be the first player to get rid of all your Malus cards.
+## The goal of the game is to be the first player to get rid of all your Malus cards.
 
 The game is played in alternating turns. The starting player is randomly determined.
 Your turn ends after you have moved a card onto your Discard pile.
