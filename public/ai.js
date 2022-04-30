@@ -1,22 +1,59 @@
 
 var to_sns
 var from_sns
-function weight(game) {
+function weight(game, branch) {
   var  points = 0
 	if(game[game.turn+"malus"].length === 0 && game[game.turn+"reserve"].length === 0) {
-		return 999999
+	 points += 9999999
 	}	
 	if( game[game.turn+"reserve"].length != 0)
-		points -= 1000
-	points -= empty_tableau(game)*100
-	points += game[(game.turn === "red" ? "black" : "red") +"malus"].length
-	points -= game[game.turn  +"malus"].length*100
-	for(var i = 0; i< 2; i++) {
-		for(var j = 0; j < 4; j++) {
-			points += 1* game[(i === 0? "red" :"black") + "foundation"+j].length
-			points += 0.9*game[(i === 0? "red" :"black") + "tableau"+j].length
-		}
+		points -= 500
+	if(game[game.turn+"stock"].length + game[game.turn+"discard"].length === 0)
+		points -= 500
+	points -= empty_tableau(game)*500
+	points += game[(game.turn === "red" ? "black" : "red")  +"malus"].length
+	points += game.redfoundation0.length*0.2
+	points += game.redfoundation1.length*0.2
+	points += game.redfoundation2.length*0.2
+	points += game.redfoundation3.length*0.2
+	points += game.blackfoundation0.length*0.2
+	points += game.blackfoundation1.length*0.2
+	points += game.blackfoundation2.length*0.2
+	points += game.blackfoundation3.length*0.2
+	points += game.redtableau0.length < 3 ? -100 : 0
+	points += game.redtableau0.length*0.1
+	points += game.redtableau1.length < 3 ? -100 : 0
+	points += game.redtableau1.length*0.1
+	points += game.redtableau2.length < 3 ? -100 : 0
+	points += game.redtableau2.length*0.1
+	points += game.redtableau3.length < 3 ? -100 : 0
+	points += game.redtableau3.length*0.1
+	points += game.blacktableau0.length < 3 ? -100 : 0
+	points += game.blacktableau0.length*0.1
+	points += game.blacktableau1.length < 3 ? -100 : 0
+	points += game.blacktableau1.length*0.1
+	points += game.blacktableau2.length < 3 ? -100 : 0
+	points += game.blacktableau2.length*0.1
+	points += game.blacktableau3.length < 3 ? -100 : 0
+	points += game.blacktableau3.length*0.1
+	points -= 30*actions_fromstack(game, (game.turn === "red" ? "black": "red")+"malus" ).length
+	points -= 1*actions_tostack(game, game.turn+"discard" ).length
+	points -= 50*actions_tostack(game, game.turn+"malus" ).length
+	for(var a of branch) {
+		if(a[0].includes("stock"))
+			points -=.1
+		if(a[0].includes("malus"))
+			points +=300
+		if(a[1] === game.turn+"malus")
+			points -=300
+		if(a[0].includes("foundation"))
+			points -=31
+		if(a[1].includes("malus"))
+			points +=1
+		if(a[1].includes("foundation"))
+			points +=33
 	}
+	
   return points
 }
 
@@ -25,16 +62,32 @@ export function weighted_action_sequences(game, board_states) {
 	to_sns = to_stacknames(game.turn)
 	from_sns = from_stacknames(game.turn)
 	actions_from(game, board_states, [])
-	console.log(board_states)
-	return []
+	var highest
+	board_states = board_states.filter(state => state.b.length != 0 && (state.b.length === 5 || state.b[state.b.length-1][1] === game.turn+"discard") )
+	for(var s of board_states){
+		if(highest) {
+			if(s.w > highest.w)
+				highest = s
+			else if(s.w === highest.w)
+				if(s.b.length < highest.b.length)
+					highest = s
+		}
+		else 
+			highest = s
+	}
+	return highest
 }
 
 function actions_from (game, board_states, branch) {
+	if(board_states.length > 5000)
+		return false
 	var open_actions = []
 	for(var i = 0; i < branch.length; i++) { 
 		var index = open_actions.findIndex( a => a[0][0] === branch[i][0] || a[0][0] === branch[i][1] || a[0][1] === branch[i][0] || a[0][1] === branch[i][1])
-		if(index != -1 ) 
-			open_actions.splice(index,1)
+		if(index != -1 ) {
+			open_actions[index] = [branch[i],i]
+			continue
+		}
 		open_actions.push([branch[i],i])
 	}
 
@@ -49,50 +102,85 @@ function actions_from_to(game, from_stack, board_states, branch, open_actions) {
 		if( open_actions.find(a=>a[0][1] === from_stack )) 
 			continue
 		if(valid_d(game, from_stack, from_up_c, to_stack )) { 
-			var cloned_game = apply_action_to_game(structuredClone(game), from_stack, to_stack)
-			var g_w_actionPON =	boardPON(cloned_game)
-			
-			var index = board_states.findIndex(o => o.p === g_w_actionPON)
-			if( index > -1) {
-				if( board_states[index].b.length > branch.length) {
-					var cloned_branch  = structuredClone(branch)
-					cloned_branch.push([from_stack, to_stack])
-					board_states.splice(index,1)
-					board_states.push({
-						b : cloned_branch, 
-						w : weight(cloned_game),
-						p : g_w_actionPON
-					})
-					if(cloned_branch.length < 5  && to_stack != game.turn+"discard" )
-						actions_from(cloned_game, board_states, cloned_branch,  to_stacknames(cloned_game.turn), from_stacknames(cloned_game.turn))
-				}
-			}
-			else {
-				var cloned_branch  = structuredClone(branch)
+			var cloned_game = apply_action_to_game(JSON.parse(JSON.stringify(game)), from_stack, to_stack)
+			var boardpon = boardPON(cloned_game)
+			var index = board_states.findIndex(o => o.p === boardpon)
+			if( index === -1) {
+				var cloned_branch  = JSON.parse(JSON.stringify(branch))
 				cloned_branch.push([from_stack, to_stack])
 				board_states.push({
 					b : cloned_branch, 
-					w : weight(cloned_game),
-					p : g_w_actionPON
+					w : weight(cloned_game, cloned_branch),
+					p : boardpon
 				})
-				if(cloned_branch.length <5 && to_stack != game.turn+"discard" )
+				if(cloned_game.moves_counter >0 && to_stack != game.turn+"discard" )
 					actions_from(cloned_game, board_states, cloned_branch,  to_stacknames(cloned_game.turn), from_stacknames(cloned_game.turn))
 			}
+		
 		}
 	}
+}
+
+function actions_fromstack(game, from_stack, to_stack) {
+	var from_up_c = game[from_stack][game[from_stack].length-1]
+	var actions = []
+	if(!from_up_c ) return []
+	for(var to_stack of to_sns) {
+		if(valid_d(game, from_stack, from_up_c, to_stack )) { 
+			actions.push([from_stack, to_stack])
+		}
+	}
+	return actions
+}
+
+function actions_tostack(game, to_stack) {
+	var actions = []
+	if(!from_up_c ) return []
+	for(var from_stack of from_sns) {
+		if(game[from_stack].length > 0)
+			var from_up_c = game[from_stack][game[from_stack].length-1]
+		if(valid_d(game, from_stack, from_up_c, to_stack )) { 
+			actions.push([from_stack, to_stack])
+		}
+	}
+	return actions
+}
+
+
+function boardPON(game) {
+	var pon = []
+	for (var cards_of_stack of Object.values(game)) {
+		pon.push(PON_from_card(cards_of_stack[cards_of_stack.length-1]))
+	}
+	return pon.sort().toString()
+}
+
+
+
+export function PON_from_card(c) {
+	if(!c) return ""
+	var cp = ""
+	cp +=  ! c.faceup ? c.color === "red" ? "R" : "B" :  c.color === "red" ? "r" : "b"
+	cp += c.suit ? c.suit[0] : ""
+	cp += c.value ? (c.value < 10 ? c.value : c.value === 10 ? "t" : c.value === 11 ? "j" : c.value === 12 ? "q" : "k") : ""
+	return cp
 }
 
 function valid_d(game, from_stack, from_card, to_stack) {
 	if (! (from_card && to_stack))
 		return false
- 	if(to_stack.includes("tableau") && game[from_stack].length === 1 && game[to_stack].length === 0) return false
 	if (game[to_stack].length > 0)
 		var to_card = game[to_stack][game[to_stack].length-1]
-
-	if (to_stack.includes("reserve")) {
-		if(from_stack.includes("malus") )
+ 	if(to_stack.includes("tableau") && game[from_stack].length === 1 && game[to_stack].length === 0)
+	  return false
+	if (game.turn_counter === 0 && from_stack.includes("malus"))
 			return false
+	if(from_stack.includes("malus") && ! (to_stack.includes("tableau") || to_stack.includes("foundation")) )
+		return false
+	if (to_stack.includes("reserve")) {
 		if (to_card)
+			return false
+		if(! (from_stack.includes("tableau")))
 			return false
 		if ( !to_stack.includes(game.turn))
 			return false
@@ -102,14 +190,13 @@ function valid_d(game, from_stack, from_card, to_stack) {
 		return false
 	if (to_stack.includes("discard")) {
 		if(to_stack.includes(game.turn))
-			if( ! (from_stack === game.turn+"malus"))
-				return true
-			else
-				return false
-		if (game[game.turn+"discard"].length === 0) 
+			return true
+		if(game.turn_counter === 0)
 			return false
-		if(! (from_stack.includes("reserve") || from_stack.includes("malus") || from_stack.includes("stock")))
-					return false
+		if(!from_stack.includes("tableau"))
+			return false
+		if (to_card === undefined) 
+			return true
 		if(from_card.suit != to_card.suit && to_card.value === from_card.value)
 			return true
 		if (from_card.suit === to_card.suit) {
@@ -122,9 +209,9 @@ function valid_d(game, from_stack, from_card, to_stack) {
 		return false
 	}
 	if (to_stack.includes("malus")) {
-		if(! to_stack.includes(game.turn) && game[game.turn+"discard"].length === 0) 
+		if(! to_stack.includes(game.turn) && game.turn_counter === 0) 
 			return false
-		if(! (from_stack.includes("reserve") || from_stack.includes("malus") || from_stack.includes("stock")))
+		if(! (from_stack.includes("tableau") ))
 			return false
 		if (to_card === undefined) 
 			return true
@@ -146,7 +233,8 @@ function valid_d(game, from_stack, from_card, to_stack) {
 			if (from_card.suit === to_card.suit)
 				if (from_card.value - 1 === to_card.value)
 					return true
-		} else if (from_card.value === 1)
+		} 
+		else if (from_card.value === 1)
 			return true
 		return false
 	}
@@ -160,7 +248,8 @@ function valid_d(game, from_stack, from_card, to_stack) {
 					if (to_card.suit === "spades" || to_card.suit === "clubs")
 						return true
 			}
-		} else
+		} 
+		else
 			return true
 		return false
 	}
@@ -168,16 +257,9 @@ function valid_d(game, from_stack, from_card, to_stack) {
 
 function apply_action_to_game(game, from, to) {
 	game[to].push(game[from].pop())
+	if(!to.includes("foundation") && ! from.includes("stock"))
+		game.moves_counter = game.moves_counter-1
 	return game
-}
-
-export function PON_from_card(c) {
-	if(!c) return ""
-	var cp = ""
-	cp +=  ! c.faceup ? c.color === "red" ? "R" : "B" : "" 
-	cp += c.suit ? c.suit[0] : ""
-	cp += c.value ? (c.value < 10 ? c.value : c.value === 10 ? "t" : c.value === 11 ? "j" : c.value === 12 ? "q" : "k") : ""
-	return cp
 }
 
 function empty_tableau(g) {
@@ -201,47 +283,8 @@ function empty_tableau(g) {
 	return count
 }
 
-function boardPON(game) {
-	var stacks = []
-	var tabl = []
-	var foun = []
-	for (var stack_key of Object.keys(game)) {
-		if (stack_key === "redmalus" || stack_key === "blackmalus" ||
-			stack_key === "redstock" || stack_key === "blackstock" ||
-			stack_key === "reddiscard" || stack_key === "blackdiscard" ||
-			stack_key === "redreserve" || stack_key === "blackreserve" ||
-			stack_key === "redtableau0" || stack_key === "blacktableau0" ||
-			stack_key === "redtableau1" || stack_key === "blacktableau1" ||
-			stack_key === "redtableau2" || stack_key === "blacktableau2" ||
-			stack_key === "redtableau3" || stack_key === "blacktableau3" ||
-			stack_key === "redfoundation0" || stack_key === "blackfoundation0" ||
-			stack_key === "redfoundation1" || stack_key === "blackfoundation1" ||
-			stack_key === "redfoundation2" || stack_key === "blackfoundation2" ||
-			stack_key === "redfoundation3" || stack_key === "blackfoundation3") {
-			if(stack_key.includes("tableau"))
-				tabl.push(PON_from_card(game[stack_key][game[stack_key].length -1]))
-			else if(stack_key.includes("foundation"))
-				foun.push(PON_from_card(game[stack_key][game[stack_key].length -1]))
-			else stacks.push(PON_from_card(game[stack_key][game[stack_key].length -1]))
-		}
-	}
-	
-	return tabl.sort().toString()+","+foun.sort().toString()+","+stacks.toString()
-}
-
 function to_stacknames(turn) {
 	return [
-		(turn === "red" ? "black" : "red") + "malus",
-		(turn === "red" ? "black" : "red") + "discard",
-		(turn ) + "discard",
-		"redfoundation0",
-		"redfoundation1",
-		"redfoundation2",
-		"redfoundation3",
-		"blackfoundation0",
-		"blackfoundation1",
-		"blackfoundation2",
-		"blackfoundation3",
 		"redtableau0",
 		"redtableau1",
 		"redtableau2",
@@ -250,23 +293,6 @@ function to_stacknames(turn) {
 		"blacktableau1",
 		"blacktableau2",
 		"blacktableau3",
-		turn + "reserve",
-	]
-}
-
-function from_stacknames (turn) {
-	return [
-		turn+"stock",
-		turn+"reserve",
-		turn+"malus",
-		"redtableau0",
-		"redtableau1",
-		"redtableau2",
-		"redtableau3",
-		"blacktableau0", 
-		"blacktableau1",
-		"blacktableau2",
-		"blacktableau3",
 		"redfoundation0",
 		"redfoundation1",
 		"redfoundation2",
@@ -275,5 +301,34 @@ function from_stacknames (turn) {
 		"blackfoundation1",
 		"blackfoundation2",
 		"blackfoundation3",
+		(turn === "red" ? "black" : "red") + "malus",
+		(turn === "red" ? "black" : "red") + "discard",
+		turn + "reserve",
+		(turn ) + "discard",
+	]
+}
+
+function from_stacknames (turn) {
+	return [
+		"redtableau0",
+		"redtableau1",
+		"redtableau2",
+		"redtableau3",
+		"blacktableau0", 
+		"blacktableau1",
+		"blacktableau2",
+		"blacktableau3",
+		turn+"stock",
+		"redfoundation0",
+		"redfoundation1",
+		"redfoundation2",
+		"redfoundation3",
+		"blackfoundation0",
+		"blackfoundation1",
+		"blackfoundation2",
+		"blackfoundation3",
+		turn+"reserve",
+		turn+"malus",
+
 	]
 }

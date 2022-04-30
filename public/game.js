@@ -53,6 +53,9 @@ export class game extends React.Component {
 		this.rightclick_event = this.rightclick_event.bind(this)
 
 		 this.state.interval = setInterval(() => {
+			if( (this.state.ai_action_stack.length === 0) && (true ||(this.props.red.username === "AI" && this.state.turn === "red") ||( this.props.black.username === "AI" && this.state.turn === "black") )) {
+				this.gen_ai_action_sequence()
+			}
 			if(!this.props.analysis_board)
 				this.setState({
 					["timer_" + this.state.turn]: !this.state.branched_off ? this.state["timer_" + this.state.turn] - 0.017 : this.state["timer_" + this.state.turn],
@@ -63,7 +66,7 @@ export class game extends React.Component {
 				if(this.state.ghost_cards.length > 0)
 					for(var card of this.state.ghost_cards) {
 						if(	document.getElementById(card) && PON_from_card(this.state.ghost_dragging) != card)
-							document.getElementById(card).style.opacity = "0.9"
+							document.getElementById(card).style.opacity = "0.8"
 					}
 		}, 17) 
 
@@ -71,9 +74,6 @@ export class game extends React.Component {
 			this.game_update_handler(this.state.actions[i], true)
 		}
 
-		if(this.props.red.username === "AI" || this.props.black.username === "AI") {
-			this.gen_ai_action_sequence()
-		}
 		this.state.timer_red = this.props.timer_red ? this.props.timer_red : this.state.timer_red
 		this.state.timer_black = this.props.timer_black ? this.props.timer_black : this.state.timer_black
 	
@@ -91,6 +91,10 @@ export class game extends React.Component {
 
 		socket.on("game_update", (data) => {
 			if(this.state.ghost_cards.length > 0) {
+				for(var card of this.state.ghost_cards) {
+					if(	document.getElementById(card) && PON_from_card(this.state.ghost_dragging) != card)
+						document.getElementById(card).style.opacity = 1
+				}
 				this.state.ghost_cards.length = 0
 				this.setState({
 					ghost_dragging: false
@@ -107,24 +111,6 @@ export class game extends React.Component {
 			}
 			this.state.last_action = new Date()
 			this.game_update_handler(data)
-			var stack_names = stack_names_from_PON(action_from_PON(data).a)
-
-			if (!((stack_names[0] === this.state.color + "stock" && stack_names[1] === this.state.color + "discard") || ((!stack_names[0].includes(this.state.color) && stack_names[0].includes("stock")) && (stack_names[1] && (!stack_names[1].includes(this.state.color) && stack_names[1].includes("discard"))))))
-				this.setState({
-					last_moved1: stack_names[0],
-					last_moved2: stack_names[1]
-				})
-			else
-			if ((this.state[this.state.color + "stock"].length && this.state[this.state.color + "stock"][this.state[this.state.color + "stock"].length - 1].faceup) || (this.state[(this.state.color === "red" ? "black" : "red") + "stock"].length && this.state[(this.state.color === "red" ? "black" : "red") + "stock"][this.state[(this.state.color === "red" ? "black" : "red") + "stock"].length - 1].faceup))
-				this.setState({
-					last_moved1: stack_names[0],
-					last_moved2: stack_names[0]
-				})
-			else
-				this.setState({
-					last_moved1: stack_names[0],
-					last_moved2: stack_names[1]
-				})
 
 			if (step + 1 < this.state.actions.length)
 				for (var i = 0; i < this.state.actions.length - step; i++)
@@ -141,7 +127,8 @@ export class game extends React.Component {
 	}
 
 	rightclick_event (card_right_clicked, stackname) {
-		this.setState({dragging : false})
+		if(this.state.dragging)
+			this.setState({dragging : false})
 		if(this.state.ghost_dragging ) {
 			if(this.state.ghost_dragging.name === stackname) {
 				if(this.state.ghost_dragging) {
@@ -169,6 +156,10 @@ export class game extends React.Component {
 	}
 
 	leftclick_event (card_left_clicked, stackname) {
+		if(this.state.ghost_dragging) {
+			document.getElementById(PON_from_card(this.state.ghost_dragging)).style.opacity = 1
+			this.setState({ghost_dragging : false})
+		}
 		if(this.state.dragging ) {
 			if(this.state.dragging.name === stackname) {
 				this.setState({
@@ -192,39 +183,39 @@ export class game extends React.Component {
 	}
 
 	gen_ai_action_sequence = () => {
-		if( true || (this.props.red.username === "AI" && this.state.turn === "red") ||( this.props.black.username === "AI" && this.state.turn === "black") ) {
-			this.state.ai_action_stack =  weighted_action_sequences({
-				redmalus : this.state.redmalus,
-				redstock : this.state.redstock,
-				reddiscard : this.state.reddiscard,
-				redreserve : this.state.redreserve,
-				redtableau0 : this.state.redtableau0,
-				redtableau1 : this.state.redtableau1,
-				redtableau2 : this.state.redtableau2,
-				redtableau3 : this.state.redtableau3,
-				blacktableau0 : this.state.blacktableau0,
-				blacktableau1 : this.state.blacktableau1,
-				blacktableau2 : this.state.blacktableau2,
-				blacktableau3 : this.state.blacktableau3,
-				redfoundation0 : this.state.redfoundation0,
-				redfoundation1 : this.state.redfoundation1,
-				redfoundation2 : this.state.redfoundation2,
-				redfoundation3 : this.state.redfoundation3,
-				blackfoundation0 : this.state.blackfoundation0,
-				blackfoundation1 : this.state.blackfoundation1,
-				blackfoundation2 : this.state.blackfoundation2,
-				blackfoundation3 : this.state.blackfoundation3,
-				blackmalus : this.state.blackmalus,
-				blackstock : this.state.blackstock,
-				blackdiscard : this.state.blackdiscard,
-				blackreserve : this.state.blackreserve,
-				turn :this.state.turn,
-				moves_counter : this.state.moves_counter
-			})
-			this.state.ai_action_stack.reverse()
-			if(this.state.ai_action_stack.length > 0)
-				this.ai_action_timeout()
-		}
+		this.state.ai_action_stack =  weighted_action_sequences({
+			redmalus : this.state.redmalus,
+			redstock : this.state.redstock,
+			reddiscard : this.state.reddiscard,
+			redreserve : this.state.redreserve,
+			redtableau0 : this.state.redtableau0,
+			redtableau1 : this.state.redtableau1,
+			redtableau2 : this.state.redtableau2,
+			redtableau3 : this.state.redtableau3,
+			blacktableau0 : this.state.blacktableau0,
+			blacktableau1 : this.state.blacktableau1,
+			blacktableau2 : this.state.blacktableau2,
+			blacktableau3 : this.state.blacktableau3,
+			redfoundation0 : this.state.redfoundation0,
+			redfoundation1 : this.state.redfoundation1,
+			redfoundation2 : this.state.redfoundation2,
+			redfoundation3 : this.state.redfoundation3,
+			blackfoundation0 : this.state.blackfoundation0,
+			blackfoundation1 : this.state.blackfoundation1,
+			blackfoundation2 : this.state.blackfoundation2,
+			blackfoundation3 : this.state.blackfoundation3,
+			blackmalus : this.state.blackmalus,
+			blackstock : this.state.blackstock,
+			blackdiscard : this.state.blackdiscard,
+			blackreserve : this.state.blackreserve,
+			turn :this.state.turn,
+			moves_counter : this.state.moves_counter,
+			turn_counter : this.state.turn_counter
+		})
+		this.state.ai_action_stack = this.state.ai_action_stack.b
+		this.state.ai_action_stack.reverse()
+		if(this.state.ai_action_stack.length > 0)
+			this.ai_action_timeout()
 	}
 
 	ai_action_timeout = () => {
@@ -234,7 +225,9 @@ export class game extends React.Component {
 			var card = JSON.parse(JSON.stringify(this.state[action[0]][this.state[action[0]].length-1]))
 			card.name = action[0]
 			this.drop_event(card, action[1])
-		},90)
+			if(this.state.ai_action_stack.length > 0)
+				this.ai_action_timeout()
+		},800)
 	}
 
 	game_update_handler(data, initializing, ghost_action) {
@@ -246,6 +239,8 @@ export class game extends React.Component {
 			this.state.timer_red = data.timer_red,
 			this.state.timer_black = data.timer_black
 		}
+		this.state.last_moved1 = action[0]
+		this.state.last_moved2 = action[1]
 
 		if (!this.props.analysis_board) {
 			if (!initializing && !ghost_action)
@@ -260,7 +255,7 @@ export class game extends React.Component {
 		}
 
 		if (! (this.state.turn=== "red" && data.a[2]+data.a[3] === "rd") && ! (this.state.turn=== "black" && data.a[2]+data.a[3] === "bd") ) {
-			if(!(action[0].includes("stock") && action[1].includes("tableau")) && !action[1].includes("foundation"))
+			if( !action[1].includes("foundation") && ! action[0].includes("stock"))
 				this.state.moves_counter = this.state.moves_counter-1
 		}
 		if ( (this.state.turn=== "red" && data.a[2]+data.a[3] === "rd") || (this.state.turn=== "black" && data.a[2]+data.a[3] === "bd") ) {
@@ -273,7 +268,9 @@ export class game extends React.Component {
 				this.state[(this.state.turn === "red" ? "black" :"red")+"stock"] = dc
 				this.state[(this.state.turn === "red" ? "black" :"red") + "discard"].length = 0
 			}
+
 			this.state.turn = this.state.turn === "red" ? "black" : "red"
+
 			if (!initializing && !ghost_action && (this.props.red.current_socketid === "solo" || this.props.black.current_socketid === "solo"))
 				this.state.color = this.state.turn
 			if( (this.props.red.username === "AI" ) ||( this.props.black.username === "AI")) {
@@ -285,7 +282,7 @@ export class game extends React.Component {
 		}
 	
 		this.state[action[1]].push(this.state[action[0]].pop())
-		if (  action[0].includes("stock")) {
+		if ( action[0].includes("stock") && ! action[1].includes("discard")) {
 			if( (action[0].includes("red") && action[1] != "reddiscard") || (action[0].includes("black") && action[1] != "blackiscard") )
 				if(this.state[action[0]].length === 0) {
 					var dc = JSON.parse(JSON.stringify(this.state[(action[0].includes("red") ? "red" : "black") + "discard"]))
@@ -299,13 +296,6 @@ export class game extends React.Component {
 			this.state.replay_step++
 			this.state.game_states.push(PON_from_game(JSON.parse(JSON.stringify(this.state))))
 		}
-		if(!initializing)
-			if(this.props.red.username === "AI" || this.props.black.username === "AI")
-				if(this.state.ai_action_stack.length > 0) {
-					this.gen_ai_action_sequence()
-				}
-				else 
-					this.gen_ai_action_sequence()	
 	}
 
 	ghost_drop_event (from_card, to_stack) {
@@ -341,8 +331,8 @@ export class game extends React.Component {
 			dragging_over: "",
 			dragging: false
 		})
+		drag_counter = 0
 		if (from_card.name != to_stack) {
-			drag_counter = 0
 			if( (this.props.red.username === "AI" && this.state.turn == "red") || ( this.props.black.username === "AI" && this.state.turn === "black") )
 				socket.emit("game_action", from_card.name, to_stack)
 			else
@@ -352,6 +342,10 @@ export class game extends React.Component {
 	}
 
 	drag_event(event) {
+		if(this.state.ghost_dragging) {
+			document.getElementById(PON_from_card(this.state.ghost_dragging)).style.opacity = 1
+			this.setState({ghost_dragging : false})
+		}
 		if (event.type === "dragenter") {
 			drag_counter++
 		}
@@ -407,10 +401,12 @@ export class game extends React.Component {
 			var to_card = this.state[to_stack][this.state[to_stack].length - 1]
 		if (this.state.turn_counter === 0 && from_card.name.includes("malus"))
 			return false
+		if(from_card.name.includes("malus") && ! (to_stack.includes("tableau") || to_stack.includes("foundation")) )
+			return false
 		if (to_stack.includes("reserve")) {
-			if(from_card.name.includes("malus"))
-				return false
 			if (to_card)
+				return false
+			if(! (from_card.name.includes("tableau")))
 				return false
 			if (!to_stack.includes(this.state.turn))
 				return false
@@ -419,15 +415,14 @@ export class game extends React.Component {
 		if (to_stack.includes("stock"))
 			return false
 		if (to_stack.includes("discard")) {
-			if(  to_stack.includes(this.state.turn))
-				if(from_card.name != this.state.turn+"malus")
-					return true
-				else
-					return false
-			if ( this.state.turn_counter === 0) 
+			if( to_stack.includes(this.state.turn))
+				return true
+			if(this.state.turn_counter === 0)
 				return false
-			if(! (from_card.name.includes("reserve") || from_card.name.includes("malus") || from_card.name.includes("stock")))
-					return false
+			if(! (from_card.name.includes("tableau")))
+				return false
+			if (to_card === undefined) 
+				return true
 			if(from_card.suit != to_card.suit && to_card.value === from_card.value)
 				return true
 			if (from_card.suit === to_card.suit) {
@@ -442,7 +437,7 @@ export class game extends React.Component {
 		if (to_stack.includes("malus")) {
 			if ( ! to_stack.includes(this.state.turn) && this.state.turn_counter === 0) 
 				return false
-			if(! (from_card.name.includes("reserve") || from_card.name.includes("malus") || from_card.name.includes("stock")))
+			if(! (from_card.name.includes("tableau")))
 				return false
 			if (to_card === undefined) 
 				return true
@@ -464,7 +459,8 @@ export class game extends React.Component {
 				if (from_card.suit === to_card.suit)
 					if (from_card.value - 1 === to_card.value)
 						return true
-			} else if (from_card.value === 1)
+			} 
+			else if (from_card.value === 1)
 				return true
 			return false
 		}
@@ -478,23 +474,28 @@ export class game extends React.Component {
 						if (to_card.suit === "spades" || to_card.suit === "clubs")
 							return true
 				}
-			} else
+			} 
+			else
 				return true
 			return false
 		}
 	}
 
 	stack_color(stack_name) {
-		var defaultColor1 = "#f1debe" //1 being the lightest
-		var defaultColor2 = "#e0c699"
-		var defaultColor3 = "#d4b785" //and 3 the darkest
-		var green1 = "#75d975"
-		var green2 = "#59c259"
-		var green3 = "#41ab41"
+		var defaultColor1 = "#f1debe"
+		var dragging = "#bdb191"
+		var regular_move = "#9bb3de"
+		var discard_move = "#778191"
+		var free_move = "#cce2ff"
+		var player_turn = "#75d975"
+		var player_turn_discard ="#4a8f4a"
 		var grey = "#a6a19c"
-		var red1 = "#ff5e36"
-		var red2 = "#d14f2e"
-		var brown = "#BF8D66"
+		var enemy_turn = "#ff5e36"
+		var dragging_over_free = "#b2d3fe"
+		var dragging_over_regular = "#7f9cd4"
+		var dragging_over_discard = "#646d7c"
+		var last_move_from = "#e4d487"
+		var last_move_to = "#d5c245"
 		if (stack_name === "redmalus" || stack_name === "blackmalus" ||
 			stack_name === "redstock" || stack_name === "blackstock" ||
 			stack_name === "reddiscard" || stack_name === "blackdiscard" ||
@@ -510,59 +511,79 @@ export class game extends React.Component {
 			var color
 
 			if (stack_name === this.state.dragging_over && this.state.dragging_over && this.is_valid_drop(this.state.dragging, this.state.dragging_over)) {
-				color = brown
-				return color
+				if((this.state.dragging.name.includes("stock") && stack_name != this.state.turn+"discard") ||  stack_name.includes("foundation") )
+					return dragging_over_free
+				if(stack_name === this.state.color+"discard")
+					return dragging_over_discard
+				else
+					return dragging_over_regular
 			}
 
 			if(this.state.ghost_dragging && this.is_valid_drop(this.state.ghost_dragging, stack_name)) {
-				if(stack_name != this.state.color+"discard")
-					return "#cbdbf7"
+				if((this.state.ghost_dragging.name.includes("stock")&& stack_name != this.state.turn+"discard") || stack_name.includes("foundation") )
+					return free_move
+				if(stack_name === this.state.color+"discard")
+					return discard_move
 				else
-					return "#B9C2D0"
+					return regular_move
 			}
 
 			if(this.state.dragging && this.is_valid_drop(this.state.dragging, stack_name)) {
-				if(stack_name != this.state.color+"discard")
-					return "#ACC3EA"
+				if((this.state.dragging.name.includes("stock")&& stack_name != this.state.turn+"discard") || stack_name.includes("foundation") )
+					return free_move
+				if(stack_name === this.state.color+"discard")
+					return discard_move
 				else
-					return "#8793A6"
+					return regular_move
 			}
+			else 
 			if (this.state.turn === this.state.color && ((stack_name === this.state.color + "reserve") || stack_name === this.state.color + "malus")) {
-				color = green1
-				if (this.state.last_moved1 === stack_name || this.state.last_moved2 === stack_name)
-					color = color === green1 ? green2 : green3
+				color = player_turn
+				if (!this.state.dragging && this.state.last_moved1 === stack_name)
+					color =   last_move_from
+				else if( !this.state.dragging && this.state.last_moved2 === stack_name)
+					color =   last_move_to
 				if (this.state.dragging ? this.state.dragging.name === stack_name : false)
-					color = color === green1 ? green2 : green3
-				return color
+					color = player_turn_discard
 			}
-			if (stack_name.includes("reserve") || stack_name.includes("malus")) {
-				if ((stack_name.includes(this.state.color) && this.state.turn != this.state.color) || (!stack_name.includes(this.state.color) && this.state.turn === this.state.color)) {
-					color = grey
-				} else {
-					color = red1
-					if (this.state.last_moved1 === stack_name || this.state.last_moved2 === stack_name)
-						color = red2
-				}
-			} else {
+			else {
+				if ( stack_name.includes("reserve") || stack_name.includes("malus")) {
+					if ((stack_name.includes(this.state.color) && this.state.turn != this.state.color) || (!stack_name.includes(this.state.color) && this.state.turn === this.state.color)) {
+						color = grey
+					} else {
+						color = enemy_turn
+					}
+				} 
+			else {
 				color = defaultColor1
-				if (this.state.last_moved1 === stack_name || this.state.last_moved2 === stack_name)
-					color = color === defaultColor1 ? defaultColor2 : defaultColor3
-				if (this.state.dragging ? this.state.dragging.name === stack_name : false)
-					color = color === defaultColor1 ? defaultColor2 : defaultColor3
 			}
+			if (!this.state.dragging &&this.state.last_moved1 === stack_name)
+				color =   last_move_from
+			else if( !this.state.dragging &&this.state.last_moved2 === stack_name)
+				color =   last_move_to
+			if (this.state.dragging ? this.state.dragging.name === stack_name : false)
+					color = dragging
+			}
+			
 			return color
 		}
 		return false
 	}
 
 	replay_next = () => {
+		if(this.state.ghost_dragging)
+			document.getElementById(PON_from_card(this.state.ghost_dragging)).style.opacity = 1
+		this.setState({
+			dragging : false,
+			ghost_dragging : false
+		})
 		if (this.state.replay_step >= this.state.game_states.length) {
-			alert("up2date")
 			return
 		}
 		var new_state = game_from_PON(this.state.game_states[this.state.replay_step])
 		this.setState(new_state)
-
+		this.state.last_moved1 =  stack_names_from_PON(this.state.actions[this.state.replay_step].a)[0]
+		this.state.last_moved2 =  stack_names_from_PON(this.state.actions[this.state.replay_step ].a)[1]
 		this.state.replay_step = this.state.replay_step + 1
 		if (this.state.replay_step != this.state.game_states.length) {
 			this.state.branched_off = true
@@ -591,16 +612,25 @@ export class game extends React.Component {
 	}
 
 	replay_back = () => {
+		if(this.state.ghost_dragging)
+			document.getElementById(PON_from_card(this.state.ghost_dragging)).style.opacity = 1
+		this.setState({
+			dragging : false,
+			ghost_dragging : false
+		})
 		this.state.ghost_cards.length = 0
 		if (this.state.replay_step - 1 === -1) {
-			alert("beginning")
 			return
 		}
 		if (this.state.replay_step - 1 === 0) {
 			this.setState(game_from_PON(this.props.game_PON))
+			this.state.last_moved1 = false
+			this.state.last_moved2  = false
 		}
 		if (this.state.replay_step - 1 > 0) {
 			this.setState(game_from_PON(this.state.game_states[this.state.replay_step - 2]))
+			this.state.last_moved1 =  stack_names_from_PON(this.state.actions[this.state.replay_step -2].a)[0]
+			this.state.last_moved2 =  stack_names_from_PON(this.state.actions[this.state.replay_step -2].a)[1]
 		}
 		this.state.replay_step = this.state.replay_step - 1
 		if (this.state.replay_step != this.state.game_states.length)
@@ -662,53 +692,73 @@ export class game extends React.Component {
 				id: "Game",
 				onMouseDown : e => {
 					if(e.buttons === 4 || e.buttons === 1) {
-						if(this.state.ghost_dragging)
-							document.getElementById(PON_from_card(this.state.ghost_dragging)).style.opacity = 1
-						if(e.buttons === 4)
-							this.setState({
-								dragging: false
-							})
-						this.setState({
-							ghost_dragging: false
-						})
-		
-						if(this.state.game_states.length > 0) {
-							if(this.state.replay_step > 0)
-								this.setState(game_from_PON(this.state.game_states[this.state.replay_step-1 ]))
-							else 
-								this.setState(game_from_PON(this.props.game_PON))
-						}
-						else this.setState(game_from_PON(this.props.game_PON))
-						
-						if (!this.props.analysis_board) {
-							var val = (new Date() - this.state.last_action) / 1000
-							this.setState({
-								["timer_" + this.state.turn]: this.state["timer_" + this.state.turn] 
-							})
-							if (this.state.time_control === "hourglass") {
+						if(this.state.ghost_cards.length > 0) {
+							if(e.buttons === 4)
 								this.setState({
-									["timer_" + (this.state.turn === "red" ? "black" : "red")]: this.state["timer_" + (this.state.turn === "red" ? "black" : "red")] + val
+									dragging: false
+								})
+							this.setState({
+								ghost_dragging: false
+							})
+			
+							if(this.state.game_states.length > 0) {
+								if(this.state.replay_step > 0) {
+									this.setState(game_from_PON(this.state.game_states[this.state.replay_step-1 ]))
+									var action = stack_names_from_PON(this.state.actions[this.state.replay_step-1].a)
+									this.setState({
+										last_moved1 : action[0],
+										last_moved2 : action[1]
+									})
+								}
+								else {
+									this.setState(game_from_PON(this.props.game_PON))
+									this.setState({
+										last_moved1 : false,
+										last_moved2 : false,
+									})
+								}
+								
+							}
+							else {
+								this.setState(game_from_PON(this.props.game_PON))
+								this.setState({
+									last_moved1 : false,
+									last_moved2 : false,
 								})
 							}
-						} else {
-							this.setState({
-								["timer_" + this.state.turn]: this.state.actions[this.state.actions.length - 1]["timer_" + this.state.turn]
-							})
-							if (this.state.time_control === "hourglass")
-								this.setState({
-									["timer_" + (this.state.turn === "red" ? "black" : "red")]: this.state.actions[this.state.actions.length - 1]["timer_" + (this.state.turn === "red" ? "black" : "red")]
-								})
-						}
 
-						for(var c of this.state.ghost_cards) {
-							if(document.getElementById(c) )
-								document.getElementById(c).style.opacity = 1
+							
+							if (!this.props.analysis_board) {
+								var val = (new Date() - this.state.last_action) / 1000
+								this.setState({
+									["timer_" + this.state.turn]: this.state["timer_" + this.state.turn] 
+								})
+								if (this.state.time_control === "hourglass") {
+									this.setState({
+										["timer_" + (this.state.turn === "red" ? "black" : "red")]: this.state["timer_" + (this.state.turn === "red" ? "black" : "red")] + val
+									})
+								}
+							} else {
+								this.setState({
+									["timer_" + this.state.turn]: this.state.actions[this.state.actions.length - 1]["timer_" + this.state.turn]
+								})
+								if (this.state.time_control === "hourglass")
+									this.setState({
+										["timer_" + (this.state.turn === "red" ? "black" : "red")]: this.state.actions[this.state.actions.length - 1]["timer_" + (this.state.turn === "red" ? "black" : "red")]
+									})
+							}
+
+							for(var c of this.state.ghost_cards) {
+								if(document.getElementById(c) )
+									document.getElementById(c).style.opacity = 1
+							}
+						
+							this.state.ghost_cards.length = 0
 						}
-					
-						this.state.ghost_cards.length = 0
 					}
 				},
 				style: {
+					fontFamily : "sans-serif",
 					width: "120vmax",
 					height: "100vmax"
 				}
@@ -717,7 +767,7 @@ export class game extends React.Component {
 				style: {
 					position: 'absolute',
 					top: "86vmin",
-					left: "47.7vmax",
+					left: "48.0vmax",
 					fontSize: ".8vmax"
 				}
 			}, this.props[this.state.color].username ? this.props[this.state.color].username : "you"),
@@ -725,15 +775,16 @@ export class game extends React.Component {
 				style: {
 					position: 'absolute',
 					top: "88vmin",
-					left: "47.7vmax",
+					left: "48.0vmax",
 					fontSize: ".8vmax"
 				}
 			},this.props[this.state.color].elo ? this.props[this.state.color].elo : ""),
 
 			!(this.props.spectator || this.props.analysis_board) ? React.createElement("button", {
 				style: {
-					position: "relative",
-					top: "1.5%",
+					position: "absolute",
+					top: "99vmin",
+					left: "160vmin",
 				},
 				onClick: () => {
 					if (confirm("surrender?"))
@@ -742,8 +793,9 @@ export class game extends React.Component {
 			}, "surrender") : "",
 			this.props.spectator ?  React.createElement("button", {
 				style: {
-					position: "relative",
-					top: "1.5%"
+					position: "absolute",
+					top: "99vmin",
+					left: "20vmin",
 				},
 				onClick: () => {
 					socket.emit("spectator_leave")
@@ -751,8 +803,9 @@ export class game extends React.Component {
 			}, "leave"): "",
 			this.props.analysis_board ?  React.createElement("button", {
 				style: {
-					position: "relative",
-					top: "1.5%"
+					position: "absolute",
+					top: "99vmin",
+					left: "20vmin",
 				},
 				onClick: () => {
 					this.props.end_analysis_board()
@@ -761,8 +814,8 @@ export class game extends React.Component {
 			this.props.spectator || this.props.analysis_board ? React.createElement("button", {
 				style: {
 					position: "absolute",
-					top: "3.5%",
-					left : "0px"
+					top: "99vmin",
+					left: "91.5vmin",
 				},
 				onClick: () => {
 					this.setState({
@@ -773,8 +826,8 @@ export class game extends React.Component {
 			!(this.props.spectator || this.props.analysis_board) ? React.createElement("button", {
 				style: {
 					position: "absolute",
-					top: "91.8vmin",
-					left: "0%",
+					top: "99vmin",
+					left: "10vmin",
 				},
 				onClick: () => {
 					this.setState({
@@ -792,7 +845,7 @@ export class game extends React.Component {
 				style: {
 					position: 'absolute',
 					top: "9vmin",
-					left: "47.7vmax",
+					left: "48.0vmax",
 					fontSize: ".8vmax"
 				}
 			}, this.props[(this.state.color === "red" ? "black" : "red")].username ? this.props[(this.state.color === "red" ? "black" : "red")].username : "opponent"),
@@ -801,7 +854,7 @@ export class game extends React.Component {
 				style: {
 					position: 'absolute',
 					top: "11vmin",
-					left: "47.7vmax",
+					left: "48.0vmax",
 					fontSize: ".8vmax"
 				}
 			}, this.props[(this.state.color === "red" ? "black" : "red")].elo ? this.props[(this.state.color === "red" ? "black" : "red")].elo : ""),
@@ -809,10 +862,10 @@ export class game extends React.Component {
 				style : {
 					position: 'absolute',
 					top: "47.5vmin" ,
-					left: this.state.moves_counter >= 10 ? "49.5vmax" :  "49.8vmax",
+					left: this.state.moves_counter >= 10 ? "49.5vmax" :  "50.7vmax",
 					fontSize: "1.1vmax",
 				}
-			},this.state.moves_counter),
+			},React.createElement("b",{},this.state.moves_counter)),
 			this.state.timer_red != undefined ? React.createElement(Timer, {
 				player: this.state.color === "red" ? true : false,
 				time: this.state.timer_red
@@ -891,7 +944,7 @@ function Timer(props) {
 			style: {
 				position: 'absolute',
 				top: props.player ? "92vmin" : "5vmin",
-				left: "48.7vmax",
+				left: "49.4vmax",
 				fontSize: "1.1vmax"
 			}
 		}, (props.time > 0 ? (minutes > 9 ? minutes : "0" + minutes) + ":" + (seconds > 9 ? seconds : "0" + seconds) : "0"))

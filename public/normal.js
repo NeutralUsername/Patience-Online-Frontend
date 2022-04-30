@@ -591,6 +591,18 @@ function malus(props) {
 			React.createElement('option', {
 				value: "16"
 			}, "16"),
+			React.createElement('option', {
+				value: "18"
+			}, "17"),
+			React.createElement('option', {
+				value: "18"
+			}, "16"),
+			React.createElement('option', {
+				value: "19"
+			}, "19"),
+			React.createElement('option', {
+				value: "20"
+			}, "20"),
 		),
 	)
 }

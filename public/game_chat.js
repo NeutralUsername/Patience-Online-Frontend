@@ -58,10 +58,13 @@ export class game_chat extends React.Component {
 			),
 			React.createElement ("div", {
 				style : {
+					border : "solid #424242",
+					borderRadius : "5px",
+					paddingBottom :"6px",
 					opacity : "0.7",
 					zIndex : "11",
 					position: "absolute",
-					top: "76vmin",
+					top: "78vmin",
 					left : "1vmin",
 					display: "flex",
 					height : "3vmin",

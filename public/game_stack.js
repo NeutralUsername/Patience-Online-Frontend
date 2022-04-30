@@ -39,7 +39,7 @@ export function game_stack(props) {
 				return '55.3vmax'
 			}
 			if (props.name.includes('reserve')) {
-				return '38.6vmax'
+				return '39.9vmax'
 			}
 			if (props.name.includes('malus')) {
 				var stock_leftdistance = document.getElementById(props.name.includes("red") ? "redstock" : "blackstock" ) ? document.getElementById(props.name.includes("red") ? "redstock" : "blackstock" ).offsetLeft: 0
@@ -48,7 +48,11 @@ export function game_stack(props) {
 				var discard_width = document.getElementById(props.name.includes("red") ? "reddiscard" : "blackdiscard") ?  document.getElementById(props.name.includes("red") ? "reddiscard" : "blackdiscard").clientWidth: 0
 				var stock_discard_distance = stock_leftdistance - (discard_leftdistance+discard_width)
 				var width = document.getElementById(props.name) ?  document.getElementById(props.name).clientWidth : 0
-				return reserve_leftdistance-width-stock_discard_distance +"px"
+				var old_val = document.getElementById(props.name)? document.getElementById(props.name).style.left : ""
+				if(old_val)
+				old_val = old_val.slice(0, old_val.length-2)
+				var new_val = reserve_leftdistance-width-stock_discard_distance
+				return old_val ? (parseInt(old_val) === new_val+1 || parseInt(old_val) === new_val-1 ) ?  parseInt(old_val) : new_val : new_val
 			}
 		}
 		else {
@@ -59,10 +63,14 @@ export function game_stack(props) {
 				var reserve_width = document.getElementById(props.name.includes("red") ? "redreserve" : "blackreserve") ?  document.getElementById(props.name.includes("red") ? "redreserve" : "blackreserve").clientWidth: 0
 				var malus_reserve_distance = malus_leftdistance - (reserve_leftdistance+reserve_width)
 				var width = document.getElementById(props.name) ?  document.getElementById(props.name).clientWidth : 0
-				return discard_leftdistance-width-malus_reserve_distance +"px"
+				var old_val = document.getElementById(props.name)? document.getElementById(props.name).style.left : ""
+				if(old_val)
+				old_val = old_val.slice(0, old_val.length-2)
+				var new_val = discard_leftdistance-width-malus_reserve_distance
+				return old_val ? (parseInt(old_val) === new_val+1 || parseInt(old_val) === new_val-1 ) ?  parseInt(old_val) : new_val : new_val
 			}
 			if (props.name.includes('discard')) {
-				return '38.6vmax'
+				return '39.9vmax'
 			}
 			if (props.name.includes('reserve')) {
 					return '55.3vmax'
@@ -73,33 +81,35 @@ export function game_stack(props) {
 			}
 		}
 	
-		if (!props.player) {
-			if (props.name.includes('tableau0')) return '59.8vmax'
-			if (props.name.includes('tableau1')) return '59.8vmax'
-			if (props.name.includes('tableau2')) return '59.8vmax'
-			if (props.name.includes('tableau3')) return '59.8vmax'
+
+		if (props.player && props.name.includes("tableau")) {
+			var opponenttableau_leftdistance = document.getElementById(props.name.includes("red") ? "blacktableau0" : "redtableau0" ) ? document.getElementById(props.name.includes("red") ? "blacktableau0" : "redtableau0" ).offsetLeft: 0
+			var opponentfoundation_leftdistance = document.getElementById(props.name.includes("red") ? "blackfoundation0" : "redfoundation0") ?  document.getElementById(props.name.includes("red") ? "blackfoundation0" : "redfoundation0" ).offsetLeft: 0
+			var playerfoundation_leftdistance = document.getElementById(props.name.includes("red") ? "redfoundation0" : "blackfoundation0" ) ? document.getElementById(props.name.includes("red") ? "redfoundation0" : "blackfoundation0" ).offsetLeft: 0
+			var opponentfoundation_width = document.getElementById(props.name.includes("red") ? "blackfoundation0" : "redfoundation0") ?  document.getElementById(props.name.includes("red") ? "blackfoundation0" : "redfoundation0").clientWidth: 0
+			var opponent_tableaufoundation_distance = opponenttableau_leftdistance - (opponentfoundation_leftdistance+opponentfoundation_width)
+			var width = document.getElementById(props.name) ?  document.getElementById(props.name).clientWidth : 0
+			var old_val = document.getElementById(props.name)? document.getElementById(props.name).style.left : ""
+			if(old_val)
+			old_val = old_val.slice(0, old_val.length-2)
+			var new_val = playerfoundation_leftdistance-width-opponent_tableaufoundation_distance
+			return old_val ? (parseInt(old_val) === new_val+1 || parseInt(old_val) === new_val-1 ) ?  parseInt(old_val) : new_val : new_val
 		}
 		if (props.player) {
-			var val = -2.11
-			if (props.cards)
-				if (props.cards.length > 1)
-					val = (props.cards.length - 2) * 2.103
-			if (props.name.includes('tableau0')) return 32.05 - val + 'vmax'
-			if (props.name.includes('tableau1')) return 32.05 - val + 'vmax'
-			if (props.name.includes('tableau2')) return 32.05 - val + 'vmax'
-			if (props.name.includes('tableau3')) return 32.05 - val + 'vmax'
-		}
-		if (props.player) {
-			if (props.name.includes('foundation0')) return '42.6vmax'
-			if (props.name.includes('foundation1')) return '42.6vmax'
-			if (props.name.includes('foundation2')) return '42.6vmax'
-			if (props.name.includes('foundation3')) return '42.6vmax'
+			if (props.name.includes('foundation0')) return '42.9vmax'
+			if (props.name.includes('foundation1')) return '42.9vmax'
+			if (props.name.includes('foundation2')) return '42.9vmax'
+			if (props.name.includes('foundation3')) return '42.9vmax'
 		}
 		if (!props.player) {
-			if (props.name.includes('foundation0')) return '51.3vmax'
-			if (props.name.includes('foundation1')) return '51.3vmax'
-			if (props.name.includes('foundation2')) return '51.3vmax'
-			if (props.name.includes('foundation3')) return '51.3vmax'
+			if (props.name.includes('tableau0')) return '61.3vmax'
+			if (props.name.includes('tableau1')) return '61.3vmax'
+			if (props.name.includes('tableau2')) return '61.3vmax'
+			if (props.name.includes('tableau3')) return '61.3vmax'
+			if (props.name.includes('foundation0')) return '53.1vmax'
+			if (props.name.includes('foundation1')) return '53.1vmax'
+			if (props.name.includes('foundation2')) return '53.1vmax'
+			if (props.name.includes('foundation3')) return '53.1vmax'
 		}
 	}
 	var card_elements = []
@@ -178,7 +188,7 @@ export function game_stack(props) {
 		
 				paddingLeft: '.5vmax',
 				paddingRight: '.5vmax' ,
-				minWidth: "4.9vmax",
+				minWidth: "4.7vmax",
 				height: '7.6vmax',
 				maxHeight: '15vmin',
 				backgroundColor: props.color
