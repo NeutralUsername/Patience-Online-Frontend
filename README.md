@@ -19,12 +19,14 @@ Here you can pile up cards of alternating color and decreasing value: (♠️Jac
 You can move cards from Tableau onto your opponents Malus and Discard
 if they have same value and different suit or same suit and a value of +1 or -1: (♦️5, ♦️4, ♦️3, ♦️4, ♠️4, ♥️4, ♥️5;......)
 
+The cards are shuffled randomly.
+
+Kings and Aces are forbidden on the Malus.
+
 You can only move one card at a time.
 
 You can make 5 Moves each turn.
 
-Moves from Stock and Malus and Moves to Foundation are excluded from this and free.
+Moves to Foundation and moves from Stock are excluded from this and free.
 
-During the first turn you can not Move cards from or to Malus and Discard except to end your turn.
-
-The cards are shuffled randomly with the exception that Kings and Aces is not allowed on Malus.
+During the first turn you can not Move cards to your opponents side.
