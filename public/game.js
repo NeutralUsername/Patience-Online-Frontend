@@ -16,6 +16,7 @@ import {
 	action_from_PON,
 	actions_from_PON,
 	action_PON,
+	PON_from_actions,
 } from "./PON.js"
 import {
 	weighted_action_sequences
@@ -28,19 +29,20 @@ var audio2 = new Audio('https://patienceonlinecards.s3.eu-central-1.amazonaws.co
 export class game extends React.Component {
 	constructor(props) {
 		super(props)
-		this.state = game_from_PON(this.props.game_PON)
-		this.state.color = this.props.color
-		this.state.actions = actions_from_PON(this.props.actions_PON)
-		this.state.last_action = new Date(this.props.last_action)
-		this.state.moves_counter_limit = this.state.moves_counter
-		this.state.replay_step = 0
-		this.state.game_states = []
-		this.state.ghost_cards = []
-		this.state.ai_action_stack = []
-		this.state.show_chat = false
-		this.state.messages = []
-		this.state.dragging = false
-		this.state.ghost_dragging = false
+		this.state = {
+			color : this.props.color,
+			ghost_cards : [],
+			ai_action_stack : [],
+			show_chat : false,
+			dragging : false,
+			ghost_dragging : false,
+			messages : [],
+		}
+		this.load_game_pon(this.props.game_PON)
+
+		if(this.props.last_action)
+			this.state.last_action = new Date(this.props.last_action)
+
 		this.statechange_messages = this.statechange_messages.bind(this)
 		this.drop_event = this.drop_event.bind(this)
 		this.dragstart_event = this.dragstart_event.bind(this)
@@ -52,30 +54,24 @@ export class game extends React.Component {
 		this.leftclick_event = this.leftclick_event.bind(this)
 		this.rightclick_event = this.rightclick_event.bind(this)
 
-		 this.state.interval = setInterval(() => {
-			if( (this.state.ai_action_stack.length === 0) && (true ||(this.props.red.username === "AI" && this.state.turn === "red") ||( this.props.black.username === "AI" && this.state.turn === "black") )) {
+		this.state.interval = setInterval(() => {
+			if( (this.state.ai_action_stack.length === 0) && !this.state.branched_off && this.state.ghost_cards.length === 0 && ( (this.props.red.username === "AI" && this.state.turn === "red") ||( this.props.black.username === "AI" && this.state.turn === "black") )) {
 				this.gen_ai_action_sequence()
 			}
-			if(!this.props.analysis_board)
-				this.setState({
-					["timer_" + this.state.turn]: !this.state.branched_off ? this.state["timer_" + this.state.turn] - 0.017 : this.state["timer_" + this.state.turn],
-					["timer_" + (this.state.turn === "red" ? "black" : "red")]: !this.state.branched_off && this.state.time_control === "hourglass" ? this.state["timer_" + (this.state.turn === "red" ? "black" : "red")] + 0.017 : this.state["timer_" + (this.state.turn === "red" ? "black" : "red")]
-				})
+			if(!this.state.game_ended&& this.state.timer_red > 0 && this.state.timer_black > 0)
+					this.setState({
+						["timer_" + this.state.turn]: !this.state.branched_off ? this.state["timer_" + this.state.turn] - 0.017 : this.state["timer_" + this.state.turn],
+						["timer_" + (this.state.turn === "red" ? "black" : "red")]: !this.state.branched_off && this.state.time_control === "hourglass" ? this.state["timer_" + (this.state.turn === "red" ? "black" : "red")] + 0.017 : this.state["timer_" + (this.state.turn === "red" ? "black" : "red")]
+					})
 			else
-				this.setState({analysis_board : true})
-				if(this.state.ghost_cards.length > 0)
+				this.setState({timer_deactivated : true})
+			if(this.state.ghost_cards.length > 0)
+				if(	document.getElementById(this.state.ghost_cards[this.state.ghost_cards.length-1]).style.opacity != "0.8")
 					for(var card of this.state.ghost_cards) {
 						if(	document.getElementById(card) && PON_from_card(this.state.ghost_dragging) != card)
 							document.getElementById(card).style.opacity = "0.8"
 					}
-		}, 17) 
-
-		for (var i = 0; i < this.state.actions.length; i++) {
-			this.game_update_handler(this.state.actions[i], true)
-		}
-
-		this.state.timer_red = this.props.timer_red ? this.props.timer_red : this.state.timer_red
-		this.state.timer_black = this.props.timer_black ? this.props.timer_black : this.state.timer_black
+		}	, 17) 
 	
 		socket.on("chat_update", data => {
 			var opponent_username = this.state.color === "black" ? this.props.red_username ? this.props.red_username : "opponent" : this.props.black_username ? this.props.black_username : "opponent"
@@ -90,15 +86,17 @@ export class game extends React.Component {
 		})
 
 		socket.on("game_update", (data) => {
+			if(this.state.ghost_dragging)
+				document.getElementById(PON_from_card(this.state.ghost_dragging)).style.opacity = 1
+			this.setState({
+				ghost_dragging: false
+			})
 			if(this.state.ghost_cards.length > 0) {
 				for(var card of this.state.ghost_cards) {
 					if(	document.getElementById(card) && PON_from_card(this.state.ghost_dragging) != card)
 						document.getElementById(card).style.opacity = 1
 				}
 				this.state.ghost_cards.length = 0
-				this.setState({
-					ghost_dragging: false
-				})
 				if(this.state.game_states.length > 0)
 					this.setState(game_from_PON(this.state.game_states[this.state.replay_step-1]))
 				else
@@ -110,20 +108,73 @@ export class game extends React.Component {
 					this.replay_next()
 			}
 			this.state.last_action = new Date()
+			data = action_from_PON(data)
+			this.state.actions.push(data)
+			this.state.timer_red = data.timer_red,
+			this.state.timer_black = data.timer_black
 			this.game_update_handler(data)
 
-			if (step + 1 < this.state.actions.length)
-				for (var i = 0; i < this.state.actions.length - step; i++)
-					this.replay_back()
 		})
+	}
+
+	load_game_pon = (game_pon) => {
+		var g = game_from_PON(game_pon)
+		this.state.blackmalus = g.blackmalus
+		this.state.blackreserve = g.blackreserve
+		this.state.blackstock = g.blackstock
+		this.state.blackdiscard = g.blackdiscard
+		this.state.blacktableau0 = g.blacktableau0
+		this.state.blacktableau1 = g.blacktableau1
+		this.state.blacktableau2 = g.blacktableau2
+		this.state.blacktableau3 = g.blacktableau3
+		this.state.blackfoundation0 = g.blackfoundation0
+		this.state.blackfoundation1 = g.blackfoundation1
+		this.state.blackfoundation2 = g.blackfoundation2
+		this.state.blackfoundation3 = g.blackfoundation3
+		this.state.redmalus = g.redmalus
+		this.state.redreserve = g.redreserve
+		this.state.redstock = g.redstock
+		this.state.reddiscard = g.reddiscard
+		this.state.redtableau0 = g.redtableau0
+		this.state.redtableau1 = g.redtableau1
+		this.state.redtableau2 = g.redtableau2
+		this.state.redtableau3 = g.redtableau3
+		this.state.redfoundation0 = g.redfoundation0
+		this.state.redfoundation1 = g.redfoundation1
+		this.state.redfoundation2 = g.redfoundation2
+		this.state.redfoundation3 = g.redfoundation3
+
+		this.state.moves_counter = g.moves_counter
+		this.state.moves_counter_limit  =  this.state.moves_counter
+		this.state.abort_counter =  g.abort_counter ? g.abort_counter : -1 
+		this.state.time_control = g.time_control ? g.time_control : false
+		this.state.timer_black = g.timer_black ? g.timer_black : -1
+		this.state.timer_red =  g.timer_red ? g.timer_red : -1
+		this.state.turn = g.turn ? g.turn : "red"
+		this.state.turn_counter = g.turn_counter > -1 ? g.turn_counter  : -1
+		this.state.actions = actions_from_PON(game_pon.substring(game_pon.indexOf("}")+1,))
+		this.state.game_states = [game_pon.substring(0, game_pon.indexOf("}")+1)]
+		this.state.replay_step = -1
+		this.state.game_ended =  game_pon.indexOf("=") != -1 ? game_pon.substring(game_pon.indexOf("=")+1,game_pon.length) : false,
+		this.state.game_pon = game_pon
+		this.state.last_action = new Date()
+		this.state.branched_off = false
+
+		if(game_pon.indexOf("=") != -1)
+			this.state.game_ended = game_pon.substring(game_pon.indexOf("=")+1, game_pon.length)
+
+		for (var i = 0; i < this.state.actions.length; i++) {
+			this.state.timer_red = this.state.actions[i].timer_red
+			this.state.timer_black = this.state.actions[i].timer_black
+			this.game_update_handler(this.state.actions[i])
+		}
 	}
 
 	componentWillUnmount() {
 		socket.off("game_update")
 		socket.off("chat_update")
 		clearTimeout(this.state.ai_action_timeout)
-		clearInterval(this.state.interval)
-		clearInterval(this.state.interval)
+		clearInterval(this.state.interval) 
 	}
 
 	rightclick_event (card_right_clicked, stackname) {
@@ -222,38 +273,29 @@ export class game extends React.Component {
 		clearTimeout(this.state.ai_action_timeout)
 		this.state.ai_action_timeout = setTimeout( () => {
 			var action = this.state.ai_action_stack.pop()
-			var card = JSON.parse(JSON.stringify(this.state[action[0]][this.state[action[0]].length-1]))
-			card.name = action[0]
+			if(this.state[action[0]][this.state[action[0]].length-1])
+				var card = JSON.parse(JSON.stringify(this.state[action[0]][this.state[action[0]].length-1]))
+			else return
+				card.name = action[0]
 			this.drop_event(card, action[1])
 			if(this.state.ai_action_stack.length > 0)
 				this.ai_action_timeout()
 		},800)
 	}
 
-	game_update_handler(data, initializing, ghost_action) {
-		if (!data.a)
-			data = action_from_PON(data)
+	game_update_handler(data) {
 		if(!data.a) return
 		var action = stack_names_from_PON(data.a)
-		if(!this.props.analysis_board) {
-			this.state.timer_red = data.timer_red,
-			this.state.timer_black = data.timer_black
-		}
+
 		this.state.last_moved1 = action[0]
 		this.state.last_moved2 = action[1]
 
-		if (!this.props.analysis_board) {
-			if (!initializing && !ghost_action)
-				this.state.actions.push(data)
+		audio2.play()
+		if(action[1].includes(this.state.turn) && action[1].includes("discard")) {
+			if(this.state.turn != this.state.color)
+				audio.play()
 		}
-		if (!initializing && !ghost_action) {
-			audio2.play()
-			if(action[1].includes(this.state.turn) && action[1].includes("discard")) {
-				if(this.state.turn != this.state.color)
-					audio.play()
-			}
-		}
-
+		
 		if (! (this.state.turn=== "red" && data.a[2]+data.a[3] === "rd") && ! (this.state.turn=== "black" && data.a[2]+data.a[3] === "bd") ) {
 			if( !action[1].includes("foundation") && ! action[0].includes("stock"))
 				this.state.moves_counter = this.state.moves_counter-1
@@ -268,12 +310,8 @@ export class game extends React.Component {
 				this.state[(this.state.turn === "red" ? "black" :"red")+"stock"] = dc
 				this.state[(this.state.turn === "red" ? "black" :"red") + "discard"].length = 0
 			}
-
 			this.state.turn = this.state.turn === "red" ? "black" : "red"
-
-			if (!initializing && !ghost_action && (this.props.red.current_socketid === "solo" || this.props.black.current_socketid === "solo"))
-				this.state.color = this.state.turn
-			if( (this.props.red.username === "AI" ) ||( this.props.black.username === "AI")) {
+			if( (this.props.red.username === "AI" ) ||( this.props.black.username === "AI") ) {
 				if(	this.state.ai_action_stack.length > 0) {
 					this.state.ai_action_stack.length = 0
 					clearTimeout(this.state.ai_action_timeout)
@@ -282,6 +320,12 @@ export class game extends React.Component {
 		}
 	
 		this.state[action[1]].push(this.state[action[0]].pop())
+		if(this.state.redmalus.length+this.state.redreserve.length === 0 || this.state.blackmalus.length +this.state.blackreserve.length === 0) {
+			alert("game ended")
+			this.state.game_ended = "="
+		}
+			
+
 		if ( action[0].includes("stock") && ! action[1].includes("discard")) {
 			if( (action[0].includes("red") && action[1] != "reddiscard") || (action[0].includes("black") && action[1] != "blackiscard") )
 				if(this.state[action[0]].length === 0) {
@@ -291,9 +335,9 @@ export class game extends React.Component {
 					this.state[(action[0].includes("red") ? "red" : "black") + "discard"].length = 0
 				}
 		}
-		
-		if (! (this.state.branched_off || (this.props.analysis_board && !initializing) || ghost_action ) ) {
+		if(this.state.ghost_cards.length === 0) {
 			this.state.replay_step++
+			this.state.game_pon = this.game_pon()
 			this.state.game_states.push(PON_from_game(JSON.parse(JSON.stringify(this.state))))
 		}
 	}
@@ -303,26 +347,21 @@ export class game extends React.Component {
 		this.setState({
 			ghost_dragging: false
 		})
-		if (this.is_valid_drop(from_card, to_stack)) {
-			drag_counter = 0 
-			var a = PON_from_action({
-				from_stack: from_card.name,
-				to_stack: to_stack
+		drag_counter = 0 
+		var a = PON_from_action({
+			from_stack: from_card.name,
+			to_stack: to_stack
+		})
+		this.state.ghost_cards.push(PON_from_card(from_card))
+		this.game_update_handler({a : a, timer_red : this.state.timer_red, timer_black : this.state.timer_black})
+		if(this.state.moves_counter === 0) {
+			a = PON_from_action({
+				from_stack: this.state.turn+"stock",
+				to_stack:  this.state.turn+"discard",
 			})
-			this.state.ghost_cards.push(PON_from_card(from_card))
+			this.state.ghost_cards.push(PON_from_card(this.state[this.state.turn+"stock"][this.state[this.state.turn+"stock"].length-1] ))
 			this.game_update_handler(action_PON(a, this.state.timer_red, this.state.timer_black), false, true)
-			if(this.state.moves_counter === 0) {
-				a = PON_from_action({
-					from_stack: this.state.turn+"stock",
-					to_stack:  this.state.turn+"discard",
-				})
-				this.state.ghost_cards.push(PON_from_card(this.state[this.state.turn+"stock"][this.state[this.state.turn+"stock"].length-1] ))
-				this.game_update_handler(action_PON(a, this.state.timer_red, this.state.timer_black), false, true)
-			}
-		
 		}
-		else 	
-			document.getElementById(PON_from_card(this.state.ghost_dragging)).style.opacity = 1
 	}
 
 	drop_event(from_card, to_stack) {
@@ -333,8 +372,36 @@ export class game extends React.Component {
 		})
 		drag_counter = 0
 		if (from_card.name != to_stack) {
-			if( (this.props.red.username === "AI" && this.state.turn == "red") || ( this.props.black.username === "AI" && this.state.turn === "black") )
-				socket.emit("game_action", from_card.name, to_stack)
+			if( this.props.offline ) {
+				if (this.is_valid_drop(from_card, to_stack)) {
+
+					var a = PON_from_action({
+						from_stack: from_card.name,
+						to_stack: to_stack
+					})
+					var action = {a : a, timer_red : this.state.timer_red, timer_black : this.state.timer_black}
+					this.state.actions.push(action)
+					this.state.last_action = new Date()
+					this.state.timer_red = this.state.timer_red
+					this.state.timer_black = this.state.timer_black
+					this.game_update_handler(action)
+					if(this.state.moves_counter === 0) {
+						a = PON_from_action({
+							from_stack: this.state.turn+"stock",
+							to_stack:  this.state.turn+"discard",
+						})
+						var action = {
+							a : a, 
+							timer_red : this.state.timer_red, 
+							timer_black : this.state.timer_black
+						}
+						this.state.actions.push(action)
+						this.state.timer_red = this.state.timer_red
+						this.state.timer_black = this.state.timer_black
+						this.game_update_handler({a : a, timer_red : this.state.timer_red , timer_black : this.state.timer_black})
+					}
+				}
+			}
 			else
 				if (this.is_valid_drop(from_card, to_stack))
 					socket.emit("game_action", from_card.name, to_stack)
@@ -363,10 +430,10 @@ export class game extends React.Component {
 	}
 
 	dragstart_event(card, ghost_move) {
+		if(this.state.game_ended && !ghost_move) return false
+		if(this.props.spectator && !ghost_move) return false
 		if(this.state.ghost_cards.length > 0 && !ghost_move) return false
-		if(this.state.analysis_board && ! ghost_move) return false
 		if (this.state.branched_off && ! ghost_move) return false
-		if (this.props.spectator) return false
 		if (!card.uppermost  ) return false
 		if (!card.faceup) return false
 		if (card.name.includes("discard")) return false
@@ -415,8 +482,12 @@ export class game extends React.Component {
 		if (to_stack.includes("stock"))
 			return false
 		if (to_stack.includes("discard")) {
-			if( to_stack.includes(this.state.turn))
-				return true
+			if( to_stack.includes(this.state.turn)) {
+				if(from_card.name.includes("tableau") || from_card.name.includes("stock"))
+					return true
+				else
+					return false
+			}	
 			if(this.state.turn_counter === 0)
 				return false
 			if(! (from_card.name.includes("tableau")))
@@ -577,36 +648,20 @@ export class game extends React.Component {
 			dragging : false,
 			ghost_dragging : false
 		})
-		if (this.state.replay_step >= this.state.game_states.length) {
+		if (this.state.replay_step === this.state.actions.length-1) 
 			return
-		}
-		var new_state = game_from_PON(this.state.game_states[this.state.replay_step])
-		this.setState(new_state)
-		this.state.last_moved1 =  stack_names_from_PON(this.state.actions[this.state.replay_step].a)[0]
-		this.state.last_moved2 =  stack_names_from_PON(this.state.actions[this.state.replay_step ].a)[1]
+		
+		this.setState(game_from_PON(this.state.game_states[this.state.replay_step +2 ]))
+
+		this.state.last_moved1 =  stack_names_from_PON(this.state.actions[this.state.replay_step +1].a)[0]
+		this.state.last_moved2 =  stack_names_from_PON(this.state.actions[this.state.replay_step +1].a)[1]
 		this.state.replay_step = this.state.replay_step + 1
-		if (this.state.replay_step != this.state.game_states.length) {
+		this.state.game_pon = this.game_pon()
+
+		if (this.state.replay_step != this.state.actions.length-1) {
 			this.state.branched_off = true
-		} else {
-			if (!this.props.analysis_board) {
-				var val = (new Date() - this.state.last_action) / 1000
-				this.setState({
-					["timer_" + new_state.turn]: new_state["timer_" + new_state.turn] - val
-				})
-				if (this.state.time_control === "hourglass") {
-					this.setState({
-						["timer_" + (new_state.turn === "red" ? "black" : "red")]: new_state["timer_" + (new_state.turn === "red" ? "black" : "red")] + val
-					})
-				}
-			} else {
-				this.setState({
-					["timer_" + new_state.turn]: this.state.actions[this.state.actions.length - 1]["timer_" + new_state.turn]
-				})
-				if (this.state.time_control === "hourglass")
-					this.setState({
-						["timer_" + (new_state.turn === "red" ? "black" : "red")]: this.state.actions[this.state.actions.length - 1]["timer_" + (new_state.turn === "red" ? "black" : "red")]
-					})
-			}
+		} 
+		else {
 			this.state.branched_off = false
 		}
 	}
@@ -619,26 +674,24 @@ export class game extends React.Component {
 			ghost_dragging : false
 		})
 		this.state.ghost_cards.length = 0
-		if (this.state.replay_step - 1 === -1) {
+		if (this.state.replay_step === -1) {
 			return
 		}
-		if (this.state.replay_step - 1 === 0) {
-			this.setState(game_from_PON(this.props.game_PON))
+		if (this.state.replay_step === 0) {
 			this.state.last_moved1 = false
 			this.state.last_moved2  = false
 		}
-		if (this.state.replay_step - 1 > 0) {
-			this.setState(game_from_PON(this.state.game_states[this.state.replay_step - 2]))
-			this.state.last_moved1 =  stack_names_from_PON(this.state.actions[this.state.replay_step -2].a)[0]
-			this.state.last_moved2 =  stack_names_from_PON(this.state.actions[this.state.replay_step -2].a)[1]
+		else {
+			this.state.last_moved1 = this.state.actions[this.state.replay_step][0]
+			this.state.last_moved2  =this.state.actions[this.state.replay_step][1]
 		}
+		this.setState(game_from_PON(this.state.game_states[this.state.replay_step]))
 		this.state.replay_step = this.state.replay_step - 1
-		if (this.state.replay_step != this.state.game_states.length)
-			this.state.branched_off = true
+		this.state.game_pon = this.game_pon()
+		this.state.branched_off = true
 	}
 
 	replay_slider = (e) => {
-		this.state.ghost_cards.length = 0
 		var val = e.target.value
 		var rep = this.state.replay_step
 
@@ -650,6 +703,16 @@ export class game extends React.Component {
 			for (var i = 0; i < rep - val; i++)
 				this.replay_back()
 		}
+	}
+
+	game_pon = () => {
+		var actions = ""
+		for(var i = 0; i <= this.state.replay_step; i++) {
+			actions = actions+action_PON(this.state.actions[i].a, this.state.actions[i].timer_red, this.state.actions[i].timer_black)
+			actions+= ","
+		}
+		actions= actions.slice(0, actions.length-1)
+		return this.state.game_states[0] + actions
 	}
 
 	render() {
@@ -700,52 +763,28 @@ export class game extends React.Component {
 							this.setState({
 								ghost_dragging: false
 							})
-			
-							if(this.state.game_states.length > 0) {
-								if(this.state.replay_step > 0) {
-									this.setState(game_from_PON(this.state.game_states[this.state.replay_step-1 ]))
-									var action = stack_names_from_PON(this.state.actions[this.state.replay_step-1].a)
-									this.setState({
-										last_moved1 : action[0],
-										last_moved2 : action[1]
-									})
-								}
-								else {
-									this.setState(game_from_PON(this.props.game_PON))
-									this.setState({
-										last_moved1 : false,
-										last_moved2 : false,
-									})
-								}
-								
-							}
+							this.setState(game_from_PON(this.state.game_states[this.state.replay_step+1 ]))
+							if(this.state.replay_step > -1) {
+								var action = stack_names_from_PON(this.state.actions[this.state.replay_step].a)
+								this.setState({
+									last_moved1 : action[0],
+									last_moved2 : action[1]
+								})
+							}	
 							else {
-								this.setState(game_from_PON(this.props.game_PON))
 								this.setState({
 									last_moved1 : false,
-									last_moved2 : false,
+									last_moved2 : false
 								})
 							}
-
-							
-							if (!this.props.analysis_board) {
-								var val = (new Date() - this.state.last_action) / 1000
+							var val = (new Date() - this.state.last_action) / 1000
+							this.setState({
+								["timer_" + this.state.turn]: this.state["timer_" + this.state.turn] 
+							})
+							if (this.state.time_control === "hourglass") {
 								this.setState({
-									["timer_" + this.state.turn]: this.state["timer_" + this.state.turn] 
+									["timer_" + (this.state.turn === "red" ? "black" : "red")]: this.state["timer_" + (this.state.turn === "red" ? "black" : "red")] + val
 								})
-								if (this.state.time_control === "hourglass") {
-									this.setState({
-										["timer_" + (this.state.turn === "red" ? "black" : "red")]: this.state["timer_" + (this.state.turn === "red" ? "black" : "red")] + val
-									})
-								}
-							} else {
-								this.setState({
-									["timer_" + this.state.turn]: this.state.actions[this.state.actions.length - 1]["timer_" + this.state.turn]
-								})
-								if (this.state.time_control === "hourglass")
-									this.setState({
-										["timer_" + (this.state.turn === "red" ? "black" : "red")]: this.state.actions[this.state.actions.length - 1]["timer_" + (this.state.turn === "red" ? "black" : "red")]
-									})
 							}
 
 							for(var c of this.state.ghost_cards) {
@@ -780,7 +819,7 @@ export class game extends React.Component {
 				}
 			},this.props[this.state.color].elo ? this.props[this.state.color].elo : ""),
 
-			!(this.props.spectator || this.props.analysis_board) ? React.createElement("button", {
+			!this.props.offline && !this.props.spectator? React.createElement("button", {
 				style: {
 					position: "absolute",
 					top: "99vmin",
@@ -791,27 +830,17 @@ export class game extends React.Component {
 						socket.emit("client_surrender")
 				}
 			}, "surrender") : "",
-			this.props.spectator ?  React.createElement("button", {
+			this.props.offline ?  React.createElement("button", {
 				style: {
 					position: "absolute",
 					top: "99vmin",
 					left: "20vmin",
 				},
 				onClick: () => {
-					socket.emit("spectator_leave")
-				}
-			}, "leave"): "",
-			this.props.analysis_board ?  React.createElement("button", {
-				style: {
-					position: "absolute",
-					top: "99vmin",
-					left: "20vmin",
-				},
-				onClick: () => {
-					this.props.end_analysis_board()
+					this.props.end_offline_game()
 				}
 			}, "leave") : "",
-			this.props.spectator || this.props.analysis_board ? React.createElement("button", {
+			this.props.spectator || this.props.offline ? React.createElement("button", {
 				style: {
 					position: "absolute",
 					top: "99vmin",
@@ -823,7 +852,21 @@ export class game extends React.Component {
 					})
 				},
 			}, "change color") : "",
-			!(this.props.spectator || this.props.analysis_board) ? React.createElement("button", {
+			React.createElement("input", {
+				style: {
+					position: "absolute",
+					top: "99vmin",
+					left: "110.5vmin",
+				},
+				type : "text",
+				value : this.state.game_pon,
+				onChange : (e) => {
+					if(this.props.offline) {
+						this.load_game_pon(e.target.value)
+					}	
+				}
+			}),
+			!this.props.offline && !this.props.spectator ? React.createElement("button", {
 				style: {
 					position: "absolute",
 					top: "99vmin",
@@ -866,14 +909,14 @@ export class game extends React.Component {
 					fontSize: "1.1vmax",
 				}
 			},React.createElement("b",{},this.state.moves_counter)),
-			this.state.timer_red != undefined ? React.createElement(Timer, {
+			React.createElement(Timer, {
 				player: this.state.color === "red" ? true : false,
 				time: this.state.timer_red
-			}) : "",
-			this.state.timer_black != undefined ? React.createElement(Timer, {
+			}),
+			 React.createElement(Timer, {
 				player: this.state.color === "black" ? true : false,
 				time: this.state.timer_black
-			}) : "",
+			}),
 			components,
 			React.createElement("div", {
 					style: {
@@ -916,8 +959,8 @@ export class game extends React.Component {
 						width: "50vmin"
 					},
 					type: "range",
-					min: "0",
-					max: this.state.game_states.length,
+					min: "-1",
+					max: this.state.actions.length-1,
 					value: this.state.replay_step,
 					className: "slider",
 					id: "myRange",

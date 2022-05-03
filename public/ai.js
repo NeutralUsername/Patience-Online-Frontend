@@ -1,13 +1,23 @@
 
 var to_sns
 var from_sns
+var tableaunames = [
+	"redtableau0",
+	"redtableau1",
+	"redtableau2",
+	"redtableau3",
+	"blacktableau0",
+	"blacktableau1",
+	"blacktableau2",
+	"blacktableau3"
+]
 function weight(game, branch) {
   var  points = 0
 	if(game[game.turn+"malus"].length === 0 && game[game.turn+"reserve"].length === 0) {
 	 points += 9999999
 	}	
 	if( game[game.turn+"reserve"].length != 0)
-		points -= 500
+		points -= 250
 	if(game[game.turn+"stock"].length + game[game.turn+"discard"].length === 0)
 		points -= 500
 	points -= empty_tableau(game)*500
@@ -20,25 +30,30 @@ function weight(game, branch) {
 	points += game.blackfoundation1.length*0.2
 	points += game.blackfoundation2.length*0.2
 	points += game.blackfoundation3.length*0.2
-	points += game.redtableau0.length < 3 ? -100 : 0
-	points += game.redtableau0.length*0.1
-	points += game.redtableau1.length < 3 ? -100 : 0
-	points += game.redtableau1.length*0.1
-	points += game.redtableau2.length < 3 ? -100 : 0
-	points += game.redtableau2.length*0.1
-	points += game.redtableau3.length < 3 ? -100 : 0
-	points += game.redtableau3.length*0.1
-	points += game.blacktableau0.length < 3 ? -100 : 0
-	points += game.blacktableau0.length*0.1
-	points += game.blacktableau1.length < 3 ? -100 : 0
-	points += game.blacktableau1.length*0.1
-	points += game.blacktableau2.length < 3 ? -100 : 0
-	points += game.blacktableau2.length*0.1
-	points += game.blacktableau3.length < 3 ? -100 : 0
-	points += game.blacktableau3.length*0.1
-	points -= 30*actions_fromstack(game, (game.turn === "red" ? "black": "red")+"malus" ).length
-	points -= 1*actions_tostack(game, game.turn+"discard" ).length
-	points -= 50*actions_tostack(game, game.turn+"malus" ).length
+
+	for(var name of tableaunames) {
+		if(game[name].length > 0 ) {
+			points += game[name][game[name].length-1].value === 1 ? -50 : 0
+			game.turn = game.turn === "red"? "black" : "red"
+			var actions_from_stack= actions_fromstack(game, name)
+			if(actions_from_stack.find(a => a[1].includes("foundation")))
+				points -= 350
+			if(game[name].length === 1)
+				if(actions_from_stack.length > 0)
+					points -= 350
+			game.turn = game.turn === "red"? "black" : "red"
+		}
+		
+	points += game[name].length < 3 ? -100 : 0
+	points += game[name].length*0.1
+	}
+	if(actions_fromstack(game, game.turn+"stock").find(a => a[1].includes("foundation")) )
+		points -= 350
+	game.turn = game.turn === "red"? "black" : "red"
+	points -= 150*actions_fromstack(game, game.turn+"malus" ).length
+	points -= 1*actions_tostack(game, (game.turn === "red" ? "black": "red")+"discard" ).length
+	points -= 150*actions_tostack(game, (game.turn === "red" ? "black": "red")+"malus" ).length
+	game.turn = game.turn === "red"? "black" : "red"
 	for(var a of branch) {
 		if(a[0].includes("stock"))
 			points -=.1
@@ -50,11 +65,37 @@ function weight(game, branch) {
 			points -=31
 		if(a[1].includes("malus"))
 			points +=1
+		if(a[1].includes("discard") && !a[1].includes(game.turn))
+			points -=5
 		if(a[1].includes("foundation"))
 			points +=33
 	}
-	
   return points
+}
+
+function actions_fromstack(game, from_stack) {
+	var from_up_c = game[from_stack][game[from_stack].length-1]
+	var actions = []
+	if(!from_up_c ) return []
+	for(var to_stack of to_sns) {
+		if(valid_d(game, from_stack, from_up_c, to_stack )) { 
+			actions.push([from_stack, to_stack])
+		}
+	}
+	return actions
+}
+
+function actions_tostack(game, to_stack) {
+	var actions = []
+	if(!from_up_c ) return []
+	for(var from_stack of from_sns) {
+		if(game[from_stack].length > 0)
+			var from_up_c = game[from_stack][game[from_stack].length-1]
+		if(valid_d(game, from_stack, from_up_c, to_stack )) { 
+			actions.push([from_stack, to_stack])
+		}
+	}
+	return actions
 }
 
 export function weighted_action_sequences(game, board_states) {
@@ -63,7 +104,7 @@ export function weighted_action_sequences(game, board_states) {
 	from_sns = from_stacknames(game.turn)
 	actions_from(game, board_states, [])
 	var highest
-	board_states = board_states.filter(state => state.b.length != 0 && (state.b.length === 5 || state.b[state.b.length-1][1] === game.turn+"discard") )
+	board_states = board_states.filter(state => state.b.length != 0 && (game.moves_counter === 0 || state.b[state.b.length-1][1] === game.turn+"discard") )
 	for(var s of board_states){
 		if(highest) {
 			if(s.w > highest.w)
@@ -121,32 +162,6 @@ function actions_from_to(game, from_stack, board_states, branch, open_actions) {
 	}
 }
 
-function actions_fromstack(game, from_stack, to_stack) {
-	var from_up_c = game[from_stack][game[from_stack].length-1]
-	var actions = []
-	if(!from_up_c ) return []
-	for(var to_stack of to_sns) {
-		if(valid_d(game, from_stack, from_up_c, to_stack )) { 
-			actions.push([from_stack, to_stack])
-		}
-	}
-	return actions
-}
-
-function actions_tostack(game, to_stack) {
-	var actions = []
-	if(!from_up_c ) return []
-	for(var from_stack of from_sns) {
-		if(game[from_stack].length > 0)
-			var from_up_c = game[from_stack][game[from_stack].length-1]
-		if(valid_d(game, from_stack, from_up_c, to_stack )) { 
-			actions.push([from_stack, to_stack])
-		}
-	}
-	return actions
-}
-
-
 function boardPON(game) {
 	var pon = []
 	for (var cards_of_stack of Object.values(game)) {
@@ -189,8 +204,14 @@ function valid_d(game, from_stack, from_card, to_stack) {
 	if (to_stack.includes("stock"))
 		return false
 	if (to_stack.includes("discard")) {
-		if(to_stack.includes(game.turn))
-			return true
+		if(from_card.value === 1) 
+			return false
+		if(to_stack.includes(game.turn)){
+			if(from_stack.includes("tableau") ||from_stack.includes("stock"))
+				return true
+			else
+				return false
+		}	
 		if(game.turn_counter === 0)
 			return false
 		if(!from_stack.includes("tableau"))

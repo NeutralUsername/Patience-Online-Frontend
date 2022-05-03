@@ -22,7 +22,7 @@ export class account_history extends React.Component {
 			React.createElement(history, {
 				history: this.props.history,
 				username: this.props.username,
-				start_analysis_board : this.props.start_analysis_board
+				start_offline_game : this.props.start_offline_game
 			}),
 		)
 	}
@@ -41,7 +41,7 @@ function history(props) {
 					React.createElement("i", {}, "\u00A0"+ history.game.started,),
 					"\u00A0",
 			 	  React.createElement('button', {
-					onClick: () => props.start_analysis_board(history),
+					onClick: () => props.start_offline_game(history.game.PON+history.actions+"="+history.game.c,{username : history.game.r, elo : history.game.re}, {username : history.game.b, elo : history.game.be}),
 						style: {
 							cursor: "pointer"
 						}

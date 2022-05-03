@@ -197,7 +197,7 @@ export class account extends React.Component {
 				key: index++,
 				username: this.props.username,
 				history : this.props.history,
-				start_analysis_board : this.props.start_analysis_board
+				start_offline_game : this.props.start_offline_game
 			}, ))
 			
 		}

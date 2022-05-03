@@ -110,8 +110,7 @@ export class Index extends React.Component {
 			}
 			this.setState({
 				content : "game",
-				game_PON : data.game_PON,
-				actions_PON : data.actions_PON,
+				game_PON : data.game_PON+data.actions_PON,
 				color : data.color,
 				black :data.black,
 				red : data.red,
@@ -139,7 +138,7 @@ export class Index extends React.Component {
 				content: "normal",
 			})
 			if(data.replay) {
-				console.log(data.replay.game.PON+"["+data.replay.actions+"]"+"="+data.replay.game.c)
+				console.log(data.replay.game.PON+data.replay.actions)
 				if(this.props.username) {
 					this.state.history.reverse()
 					this.state.history.push({game : data.replay.game , actions : data.replay.actions})
@@ -150,8 +149,8 @@ export class Index extends React.Component {
 
 		this.menubar_logout_click = this.menubar_logout_click.bind(this)
 		this.statechange_content = this.statechange_content.bind(this)
-		this.start_analysis_board = this.start_analysis_board.bind(this)
-		this.end_analysis_board = this.end_analysis_board.bind(this)
+		this.end_offline_game = this.end_offline_game.bind(this)
+		this.start_offline_game = this.start_offline_game.bind(this)
 	}
 
 	componentWillUnmount() {
@@ -166,35 +165,25 @@ export class Index extends React.Component {
 		socket.emit("update_history")
 	}
 
-	end_analysis_board(){
+	start_offline_game(gamePON, red, black) {
+		this.setState({
+			red : red,
+			black : black,
+			content : "game",
+			game_PON : gamePON,
+			color : red.username === this.props.username ? "red" : "black",
+			offline :  true,
+		})
+	}
+
+	end_offline_game(){
 		this.setState({
 			red : {},
 			black: {},
 			game_PON : "",
-			actions_PON : "",
 			color : "",
-			content: "account",
-			analysis_board : false,
-		})
-	}
-
-	start_analysis_board(history) {
-		var actions_PON  = history.actions
-		this.setState({
-			red : {
-				username : history.game.r != null ? history.game.r : "",
-				elo :  history.game.re != null ? history.game.re : "",
-			},
-			black : {
-				username : history.game.b != null ? history.game.b : "",
-				elo :  history.game.be != null ? history.game.be : "",
-			},
-			content : "game",
-			game_PON : history.game.PON,
-			actions_PON : actions_PON,
-			color : history.game.r === this.props.username ? "red" : "black",
-			turn : history.game.r === this.props.username ? "red" : "black",
-			analysis_board :  true,
+			content: "normal",
+			offline : false,
 		})
 	}
 
@@ -236,7 +225,11 @@ export class Index extends React.Component {
 					tableau_size: 5,
 					mode : "normal",
 					time_control : "increment",
+					game_pon : "",
 					pending_rooms: this.state.pending_rooms,
+					username : this.props.username,
+					elo :this.props.elo,
+					start_offline_game : this.start_offline_game,
 					statechange_content: this.statechange_content,
 				})
 			)
@@ -276,17 +269,16 @@ export class Index extends React.Component {
 			components.push(
 				React.createElement(game, {
 					key: index++,
-					spectator: this.state.spectator ,
-					analysis_board : this.state.analysis_board ,
 					black :this.state.black,
 					red : this.state.red,
 					game_PON : this.state.game_PON,
-					actions_PON : this.state.actions_PON,
 					color : this.state.color,
 					timer_red : this.state.timer_red,
 					timer_black : this.state.timer_black,
 					last_action  : this.state.last_action,
-					end_analysis_board : this.end_analysis_board,
+					spectator: this.state.spectator ,
+					offline : this.state.offline ,
+					end_offline_game : this.end_offline_game,
 				})
 			)
 		}
@@ -296,7 +288,7 @@ export class Index extends React.Component {
 					username: this.props.username,
 					key: index++,
 					history : this.state.history,
-					start_analysis_board : this.start_analysis_board
+					start_offline_game : this.start_offline_game
 				})
 			)
 		return React.createElement('div', {

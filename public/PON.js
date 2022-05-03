@@ -280,8 +280,10 @@ export function stack_names_from_PON(action_PON) {
 export function actions_from_PON(PON) {
 	if (PON === "") return []
 	var actions = PON.split(",")
-	for (var i = 0; i < actions.length; i++)
+	for (var i = 0; i < actions.length; i++) {
+		if(stack_names_from_PON(actions[i]).length === 0) return []
 		actions[i] = action_from_PON(actions[i])
+	}
 	return actions
 }
 
@@ -483,64 +485,74 @@ export function boardPON_from_game(game, live) {
 export function PON_from_game(game, live) {
 	var PON = ""
 	PON += "("
-	for (var stack_key of Object.keys(game)) {
-		if (stack_key === "moves_counter")
-		PON += game[stack_key] + ","
-		if (stack_key === "time_control")
-			PON += game[stack_key] + ","
-		if (stack_key === "timer_red")
-			PON += game[stack_key] + ","
-		if (stack_key === "timer_black")
-			PON += game[stack_key] + ","
-		if (stack_key === "abort_counter")
-			PON += game[stack_key] + ","
-		if (stack_key === "turn_counter")
-			PON += game[stack_key] + ","
-		if (stack_key === "turn")
-			PON += game[stack_key]
+	for(var i = 0; i < 7; i++)
+		for (var stack_key of Object.keys(game)) {
+			if(i === 0)	
+				if (stack_key === "moves_counter")
+				PON += game[stack_key] + ","
+			if(i === 1)	
+				if (stack_key === "time_control")
+					PON += game[stack_key] + ","
+			if(i === 2)	
+				if (stack_key === "timer_red")
+					PON += game[stack_key] + ","
+			if(i === 3)	
+				if (stack_key === "timer_black")
+					PON += game[stack_key] + ","
+			if(i === 4)	
+				if (stack_key === "abort_counter")
+					PON += game[stack_key] + ","
+			if(i === 5)	
+				if (stack_key === "turn_counter")
+					PON += game[stack_key] + ","
+			if(i === 6)	
+				if (stack_key === "turn")
+					PON += game[stack_key]
 
-	}
+		}
 	PON += ")"
 	PON += "{"
-	for (var stack_key of Object.keys(game)) {
-		if (stack_key === "redmalus" || stack_key === "blackmalus" ||
-			stack_key === "redstock" || stack_key === "blackstock" ||
-			stack_key === "reddiscard" || stack_key === "blackdiscard" ||
-			stack_key === "redreserve" || stack_key === "blackreserve" ||
-			stack_key === "redtableau0" || stack_key === "blacktableau0" ||
-			stack_key === "redtableau1" || stack_key === "blacktableau1" ||
-			stack_key === "redtableau2" || stack_key === "blacktableau2" ||
-			stack_key === "redtableau3" || stack_key === "blacktableau3" ||
-			stack_key === "redfoundation0" || stack_key === "blackfoundation0" ||
-			stack_key === "redfoundation1" || stack_key === "blackfoundation1" ||
-			stack_key === "redfoundation2" || stack_key === "blackfoundation2" ||
-			stack_key === "redfoundation3" || stack_key === "blackfoundation3") {
-			if (live) {
-				if (stack_key === "redmalus" || stack_key === "blackmalus" || stack_key.includes("tableau0") || stack_key.includes("tableau1") || stack_key.includes("tableau2") || stack_key.includes("tableau3"))
+	for(var s =0; s<24; s++) {
+		for (var stack_key of Object.keys(game)) {
+			if ((stack_key === "redmalus" && s===0) || (stack_key === "blackmalus" && s===12) ||
+				(stack_key === "redstock" && s===1) || (stack_key === "blackstock" && s===13) ||
+				(stack_key === "reddiscard" && s===2) || (stack_key === "blackdiscard" && s===14) ||
+				(stack_key === "redreserve" && s===3) || (stack_key === "blackreserve" && s===15) ||
+				(stack_key === "redtableau0" && s===4) || (stack_key === "blacktableau0" && s===16) ||
+				(stack_key === "redtableau1" && s===5) || (stack_key === "blacktableau1" && s===17) ||
+				(stack_key === "redtableau2" && s===6) || (stack_key === "blacktableau2" && s===18) ||
+				(stack_key === "redtableau3" && s===7) || (stack_key === "blacktableau3" && s===19) ||
+				(stack_key === "redfoundation0" && s===8) || (stack_key === "blackfoundation0" && s===20) ||
+				(stack_key === "redfoundation1" && s===9) || (stack_key === "blackfoundation1" && s===21) ||
+				(stack_key === "redfoundation2" && s===10) ||( stack_key === "blackfoundation2" && s===22 )||
+				(stack_key === "redfoundation3" && s===11) || (stack_key === "blackfoundation3" && s===23 )) {
+				if (live) {
+					if (stack_key === "redmalus" || stack_key === "blackmalus" || stack_key.includes("tableau0") || stack_key.includes("tableau1") || stack_key.includes("tableau2") || stack_key.includes("tableau3"))
+						for (var i = 0; i < game[stack_key].length; i++) {
+							if (game[stack_key][i].faceup)
+								PON += PON_from_card(game[stack_key][i])
+							else PON += (game[stack_key][i].color === "red" ? game[stack_key][i].faceup ? "r" : "R" : game[stack_key][i].faceup ? "b" : "B")
+							if (i < game[stack_key].length - 1)
+								PON += "-"
+						}
+					else {
+						if (game[stack_key].length > 0) {
+							if (game[stack_key][game[stack_key].length - 1].faceup) {
+								PON += PON_from_card(game[stack_key][game[stack_key].length - 1])
+							} else {
+								PON += (game[stack_key][game[stack_key].length - 1].color === "red" ? game[stack_key][game[stack_key].length - 1].faceup ? "r" : "R" : game[stack_key][game[stack_key].length - 1].faceup ? "b" : "B")
+							}
+						}
+					}
+
+				} else
 					for (var i = 0; i < game[stack_key].length; i++) {
-						if (game[stack_key][i].faceup)
-							PON += PON_from_card(game[stack_key][i])
-						else PON += (game[stack_key][i].color === "red" ? game[stack_key][i].faceup ? "r" : "R" : game[stack_key][i].faceup ? "b" : "B")
+						PON += PON_from_card(game[stack_key][i])
 						if (i < game[stack_key].length - 1)
 							PON += "-"
 					}
-				else {
-					if (game[stack_key].length > 0) {
-						if (game[stack_key][game[stack_key].length - 1].faceup) {
-							PON += PON_from_card(game[stack_key][game[stack_key].length - 1])
-						} else {
-							PON += (game[stack_key][game[stack_key].length - 1].color === "red" ? game[stack_key][game[stack_key].length - 1].faceup ? "r" : "R" : game[stack_key][game[stack_key].length - 1].faceup ? "b" : "B")
-						}
-					}
-				}
-
-			} else
-				for (var i = 0; i < game[stack_key].length; i++) {
-					PON += PON_from_card(game[stack_key][i])
-					if (i < game[stack_key].length - 1)
-						PON += "-"
-				}
-			PON += "/"
+				PON += "/"
+			}
 		}
 	}
 	PON = PON.slice(0, PON.length - 1)
