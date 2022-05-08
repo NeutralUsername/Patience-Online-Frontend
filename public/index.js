@@ -5,8 +5,8 @@ import {
 	tutorial
 } from "./tutorial.js";
 import {
-	normal
-} from "./normal.js";
+	lobbies
+} from "./lobbies.js";
 import {
 	ranked
 } from "./ranked.js";
@@ -86,19 +86,28 @@ export class Index extends React.Component {
 			this.setState(data)
 		})
 		socket.on("server_update_leaderboard", (data) => {
-			this.setState({leaderboard : data})
+			this.setState({
+				leaderboard: data
+			})
 		})
 		socket.on("server_update_history", (data) => {
 			console.log(data)
-			var history  = []
-			if(data != false)
-				for(var game of data.games) {
-					var actions = data.actions.filter(a=>a.id === game.id)
-					if(actions.length=== 0)
-						actions.push({ap : ""})
-					history.push({game : game, actions : actions[0].ap})
+			var history = []
+			if (data != false)
+				for (var game of data.games) {
+					var actions = data.actions.filter(a => a.id === game.id)
+					if (actions.length === 0)
+						actions.push({
+							ap: ""
+						})
+					history.push({
+						game: game,
+						actions: actions[0].ap
+					})
 				}
-				this.setState({history : history})
+			this.setState({
+				history: history
+			})
 		})
 
 		socket.on("start_game", (data) => {
@@ -109,17 +118,22 @@ export class Index extends React.Component {
 				document.cookie = "active_game=" + socket.id + "; expires=" + a.toUTCString() + ';';
 			}
 			this.setState({
-				content : "game",
-				game_PON : data.game_PON+data.actions_PON,
-				color : data.color,
-				black :data.black,
-				red : data.red,
-				last_action : data.last_action,
-				spectator: data.spectator ? true : false,
+				content: "unranked"
+			}, () => {
+				this.setState({
+					content: "game",
+					game_PON: data.game_PON + data.actions_PON,
+					color: data.color,
+					black: data.black,
+					red: data.red,
+					last_action: data.last_action,
+					spectator: data.spectator ? true : false,
+					offline: false
+				})
 			})
 		})
 		socket.on("server_game_end", (data) => {
-			if (data.outcome != "spectator_leave") {
+			if (data != "spectator_leave") {
 				alert("winner: " + data.outcome.winner + "\nevent: " + data.outcome.event)
 				if (data.outcome[this.state.color + "elo"]) {
 					this.setState({
@@ -128,20 +142,23 @@ export class Index extends React.Component {
 				}
 			}
 			this.setState({
-				red : {},
+				red: {},
 				black: {},
-				game_PON : "",
-				acton_action : "",
-				timer_black : 0,
-				timer_red : 0,
-				color : "",
-				content: "normal",
+				game_PON: "",
+				acton_action: "",
+				timer_black: 0,
+				timer_red: 0,
+				color: "",
+				content: "unranked",
 			})
-			if(data.replay) {
-				console.log(data.replay.game.PON+data.replay.actions)
-				if(this.props.username) {
+			if (data.replay) {
+				console.log(data.replay.game.PON + data.replay.actions + "=")
+				if (this.props.username) {
 					this.state.history.reverse()
-					this.state.history.push({game : data.replay.game , actions : data.replay.actions})
+					this.state.history.push({
+						game: data.replay.game,
+						actions: data.replay.actions
+					})
 					this.state.history.reverse()
 				}
 			}
@@ -167,23 +184,23 @@ export class Index extends React.Component {
 
 	start_offline_game(gamePON, red, black) {
 		this.setState({
-			red : red,
-			black : black,
-			content : "game",
-			game_PON : gamePON,
-			color : red.username === this.props.username ? "red" : "black",
-			offline :  true,
+			red: red,
+			black: black,
+			content: "game",
+			game_PON: gamePON,
+			color: red.username === this.props.username ? "red" : "black",
+			offline: true,
 		})
 	}
 
-	end_offline_game(){
+	end_offline_game() {
 		this.setState({
-			red : {},
+			red: {},
 			black: {},
-			game_PON : "",
-			color : "",
-			content: "normal",
-			offline : false,
+			game_PON: "",
+			color: "",
+			content: "unranked",
+			offline: false,
 		})
 	}
 
@@ -211,25 +228,25 @@ export class Index extends React.Component {
 					key: index++,
 				})
 			)
-		if (this.state.content === "normal")
+		if (this.state.content === "unranked")
 			components.push(
-				React.createElement(normal, {
-					id: "normal",
+				React.createElement(lobbies, {
+					id: "unranked",
 					key: index++,
 					name: shuffle(socket.id.split("")).join(""), //lobby default value
 					secret: "",
-					time: 1500,
+					time: 1800,
 					increment: 0,
 					moves_counter: 5,
 					malus_size: 16,
 					tableau_size: 5,
-					mode : "normal",
-					time_control : "increment",
-					game_pon : "",
+					mode: "unranked",
+					time_control: "increment",
+					game_pon: "",
 					pending_rooms: this.state.pending_rooms,
-					username : this.props.username,
-					elo :this.props.elo,
-					start_offline_game : this.start_offline_game,
+					username: this.props.username,
+					elo: this.props.elo,
+					start_offline_game: this.start_offline_game,
 					statechange_content: this.statechange_content,
 				})
 			)
@@ -247,7 +264,7 @@ export class Index extends React.Component {
 					id: "community",
 					key: index++,
 					active_rooms: this.state.active_rooms,
-					leaderboard : this.state.leaderboard
+					leaderboard: this.state.leaderboard
 				})
 			)
 		if (this.state.content === "ranked")
@@ -269,16 +286,16 @@ export class Index extends React.Component {
 			components.push(
 				React.createElement(game, {
 					key: index++,
-					black :this.state.black,
-					red : this.state.red,
-					game_PON : this.state.game_PON,
-					color : this.state.color,
-					timer_red : this.state.timer_red,
-					timer_black : this.state.timer_black,
-					last_action  : this.state.last_action,
-					spectator: this.state.spectator ,
-					offline : this.state.offline ,
-					end_offline_game : this.end_offline_game,
+					black: this.state.black,
+					red: this.state.red,
+					game_PON: this.state.game_PON,
+					color: this.state.color,
+					timer_red: this.state.timer_red,
+					timer_black: this.state.timer_black,
+					last_action: this.state.last_action,
+					spectator: this.state.spectator,
+					offline: this.state.offline,
+					end_offline_game: this.end_offline_game,
 				})
 			)
 		}
@@ -287,21 +304,21 @@ export class Index extends React.Component {
 				React.createElement(account, {
 					username: this.props.username,
 					key: index++,
-					history : this.state.history,
-					start_offline_game : this.start_offline_game
+					history: this.state.history,
+					start_offline_game: this.start_offline_game
 				})
 			)
 		return React.createElement('div', {
-			onContextMenu : e=> {
-				e.preventDefault()
-			},
+				onContextMenu: e => {
+					e.preventDefault()
+				},
 				style: {
-					overflow : ('ontouchstart' in document.documentElement && /mobi/i.test(navigator.userAgent)) ? "" :  "hidden",
+					overflow: ('ontouchstart' in document.documentElement && /mobi/i.test(navigator.userAgent)) ? "" : "hidden",
 					position: "absolute",
 					width: "100%",
-					height : "100%",
+					height: "100%",
 					top: (this.state.content === "game" || this.state.content === "analysis_board" ? "0%" : "4%"),
-					left: (this.state.content === "game" || this.state.content === "analysis_board"  ? "0%" : "4%")
+					left: (this.state.content === "game" || this.state.content === "analysis_board" ? "0%" : "4%")
 				},
 				className: "Index",
 			},
@@ -313,20 +330,20 @@ export class Index extends React.Component {
 				logout_click: this.menubar_logout_click,
 			}),
 			React.createElement("div", {
-				style : {
-					position : "absolute",
-					top : "3.5vmax",
-				}
-			}, 
-				(this.props.username &&this.state.content != "game" ) ? React.createElement("i", {}, "signed in as ", React.createElement("b", {}, this.props.username)) : "",
-				(this.state.elo &&  this.state.content != "game" ) ? React.createElement("div", {}, React.createElement("i", {}, "elo:  ", React.createElement("b", {}, this.state.elo))) : "",
-				( this.state.elo &&this.state.content != "game") ? React.createElement("div", {}, "\u00A0") : "",
+					style: {
+						position: "absolute",
+						top: "3.5vmax",
+					}
+				},
+				(this.props.username && this.state.content != "game") ? React.createElement("i", {}, "signed in as ", React.createElement("b", {}, this.props.username)) : "",
+				(this.state.elo && this.state.content != "game") ? React.createElement("div", {}, React.createElement("i", {}, "elo:  ", React.createElement("b", {}, this.state.elo))) : "",
+				(this.state.elo && this.state.content != "game") ? React.createElement("div", {}, "\u00A0") : "",
 			),
 			React.createElement("div", {
-				style : {
-					position : "absolute",
-					top : this.state.content != "game" ? this.props.username ? "7vmax" :  "3.5vmax" : "",
-					zoom : this.state.content === "game" ?  "98%" : "",
+				style: {
+					position: "absolute",
+					top: this.state.content != "game" ? this.props.username ? "7vmax" : "3.5vmax" : "",
+					zoom: this.state.content === "game" ? "98%" : "",
 				}
 			}, components)
 		)
@@ -376,18 +393,4 @@ function getCookie(n) {
 	let a = `; ${document.cookie}`.match(`;\\s*${n}=([^;]+)`);
 	return a ? a[1] : '';
 }
-
-function disableselect(e) {
-  return false
-}
-
-function reEnable() {
-  return true
-}
-
 document.onselectstart = new Function ("return false")
-
-if (window.sidebar) {
-  document.onmousedown = disableselect
-  document.onclick = reEnable
-}

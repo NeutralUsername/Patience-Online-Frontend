@@ -21,13 +21,13 @@ export class tutorial extends React.Component {
 				href: "",
 				onClick: e => {
 					e.preventDefault()
-					this.props.statechange_content("normal")
+					this.props.statechange_content("unranked")
 				}
 			}, "back"),
 			React.createElement("article", {}, '\u00A0'),
 
 			React.createElement("a", {
-				href: "https://www.youtube.com/watch?v=VDxy5k0Kggw&ab_channel=Charade"
+				href: "https://www.youtube.com/watch?v=mDNJGyw76qQ&t=4s&ab_channel=Charade"
 			}, "video guide"),
 			React.createElement("article", {}, '\u00A0'),
 			React.createElement("article", {}, React.createElement("b", {}, 'The goal of the game is to be the first player to get rid of all your Malus cards.')),
@@ -45,25 +45,14 @@ export class tutorial extends React.Component {
 			React.createElement("article", {}, 'Here you can pile up cards of alternating color and decreasing value: (♠️Jack, ♦️10, ♠️9, ♥️8, ♣️7,.....)'),
 			React.createElement("article", {}, "\u00A0"),
 			React.createElement("article", {}, 'You can move cards from Tableau onto your opponents Malus and Discard'),
-			React.createElement("article", {}, 'if they have same value and different suit or same suit and a value of +1 or -1: (♦️5, ♦️4, ♦️3, ♦️4, ♠️4, ♥️4, ♥️5;......)'),
+			React.createElement("article", {}, 'if they have same value and different suit or same suit and value of +1 or -1: (♦️5, ♦️4, ♦️3, ♦️4, ♠️4, ♥️4, ♥️5;......)'),
 			React.createElement("article", {}, "\u00A0"),
 			React.createElement("article", {}, 'The cards are shuffled randomly.'),
-			React.createElement("article", {}, 'Kings and Aces are forbidden on the Malus.'),
+			React.createElement("article", {}, 'Kings and Aces are forbidden on Malus.'),
 			React.createElement("article", {}, 'You can only move one card at a time.'),
-			React.createElement("article", {}, 'You can make 5 Moves each turn.'),
+			React.createElement("article", {}, 'You can make 5 moves each turn.'),
 			React.createElement("article", {}, 'Moves to Foundation and moves from Stock are excluded from this and free.'),
-			React.createElement("article", {}, 'During the first turn you can not Move cards to your opponents side.'),
-			React.createElement("article", {}, '\u00A0'),
-			React.createElement("article", {}, React.createElement("b", {}, 'HINT')),
-			React.createElement("article", {}, 'To force a victory, usually you will need to place some cards onto Foundation.'),
-/*
-			React.createElement("article", {}, "\u00A0"),
-			React.createElement("article", {}, 'You can move cards from Tableau to Tableau, Foundation,  your Discard, and Reserve.'),
-			React.createElement("article", {}, 'You can move cards from Stock to Tableau, Foundation, Discard, Malus and Reserve.'),
-			React.createElement("article", {}, 'You can move cards from Reserve to Tableau, Foundation, Discard and Malus.'),
-			React.createElement("article", {}, 'You can move cards from Malus to Tableau, Foundation and opponents Discard.'),
-			React.createElement("article", {}, 'You can move cards from Foundation to Tableau and Reserve.'),
-			*/
-			)
+			React.createElement("article", {}, 'During the first turn you can not move cards to your opponents side.'),
+		)
 	}
 }

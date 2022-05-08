@@ -7,8 +7,7 @@ export class community_leaderboard extends React.Component {
 		super(props)
 	}
 
-	componentWillUnmount() {
-	}
+	componentWillUnmount() {}
 
 	render() {
 		var components = []

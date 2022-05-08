@@ -4,10 +4,17 @@ import {
 import {
 	PON_from_game
 } from "./PON.js"
-export class normal extends React.Component {
+import {
+	game
+} from "./game.js"
+export class lobbies extends React.Component {
 	constructor(props) {
 		super(props)
 		this.state = JSON.parse(JSON.stringify(this.props))
+		this.state.last_game_pon = ""
+		this.state.preview_color = "red"
+		this.state.visible = true
+		this.state.game_pon = PON_from_game(game_from_settings(this.state))
 		this.statechange_name = this.statechange_name.bind(this)
 		this.statechange_secret = this.statechange_secret.bind(this)
 		this.statechange_time = this.statechange_time.bind(this)
@@ -15,53 +22,77 @@ export class normal extends React.Component {
 		this.statechange_malus_size = this.statechange_malus_size.bind(this)
 		this.statechange_tableau_size = this.statechange_tableau_size.bind(this)
 		this.statechange_moves_counter = this.statechange_moves_counter.bind(this)
-		this.statechange_throw_malus = this.statechange_throw_malus.bind(this)
-		this.statechange_throw_discard = this.statechange_throw_discard.bind(this)
 		this.statechange_time_control = this.statechange_time_control.bind(this)
 		this.statechange_mode = this.statechange_mode.bind(this)
 		this.statechange_game_pon = this.statechange_game_pon.bind(this)
+		this.statechange_last_game_pon = this.statechange_last_game_pon.bind(this)
 		this.new_click = this.new_click.bind(this)
 		this.statechange = this.statechange.bind(this)
 	}
 
 	new_click() {
 		if (this.state.name && this.state.name.length > 5) {
-			if(!this.state.mode.includes("custom") && !this.state.mode.includes("ai"))
+			if (!this.state.mode.includes("solo") && !this.state.mode.includes("ai")) {
 				socket.emit('client_newroom', {
 					cookie: document.cookie,
 					roomdata: {
 						name: this.state.name,
 						secret: this.state.secret,
 						time: this.state.time > 0 ? Number(this.state.time) : 1,
-						time_control : this.state.time_control.includes( "increment") ? (this.state.time_control+this.state.increment) : this.state.time_control,
-						mode : this.state.mode,
-						moves_counter : this.state.moves_counter,
+						time_control: this.state.time_control.includes("increment") ? (this.state.time_control + this.state.increment) : this.state.time_control,
+						mode: this.state.mode,
+						moves_counter: this.state.moves_counter,
 						malus_size: Number(this.state.malus_size),
 						tableau_size: Number(this.state.tableau_size),
-						throw_malus: this.state.throw_malus,
-						throw_discard: this.state.throw_discard,
+						game_pon: this.state.last_game_pon
 					}
 				})
-			else {
-				if(this.state.mode.includes("custom") ){
-					this.props.start_offline_game(this.state.game_pon, { username : this.props.username ? this.props.username : "", elo : this.props.elo ? this.props.elo : ""}, { username : "" , elo : ""})
+			} else {
+				if (this.state.mode.includes("solo")) {
+					this.props.start_offline_game(this.state.game_pon, {
+						username: this.props.username ? this.props.username : "",
+						elo: this.props.elo ? this.props.elo : ""
+					}, {
+						username: "",
+						elo: ""
+					})
 				}
-				if(this.state.mode.includes("ai") ){
-					this.props.start_offline_game(this.state.game_pon, { username : this.props.username ? this.props.username : "", elo : this.props.elo ? this.props.elo : ""}, { username : "AI" , elo : ""})
+				if (this.state.mode.includes("ai")) {
+					this.props.start_offline_game(this.state.game_pon, {
+						username: this.props.username ? this.props.username : "",
+						elo: this.props.elo ? this.props.elo : ""
+					}, {
+						username: "AI",
+						elo: ""
+					})
 				}
-			 }	
-		}	
+			}
+		}
 	}
+	statechange_last_game_pon(last_game_pon) {
+		this.setState({
+			last_game_pon: last_game_pon
+		})
+	}
+
 	statechange_time_control(time_control) {
-		if(time_control === "hourglass")
+		if (time_control === "hourglass")
 			this.state.time = 90
-		if(time_control === "increment")
-			this.state.time = 60*25
-		if(time_control === "fixed_time")
+		if (time_control === "increment")
+			this.state.time = 60 * 25
+		if (time_control === "fixed_time")
 			this.state.time = 60
+		this.setState({
+			time_control: time_control,
+			visible : false,
+			preview_color : "red"
+		}, () => {
 			this.setState({
-				time_control: time_control
+				game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+			}, () => {
+				this.setState({visible:true})
 			})
+		})
 	}
 	statechange_name(name) {
 		if (name.length < 30)
@@ -78,74 +109,156 @@ export class normal extends React.Component {
 	statechange_moves_counter(moves_counter) {
 		if (moves_counter.length < 30)
 			this.setState({
-				moves_counter: moves_counter
+				moves_counter: moves_counter,
+				visible : false,
+				preview_color : "red"
+			}, () => {
+				this.setState({
+					game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+				}, () => {
+					this.setState({visible:true})
+				})
 			})
 	}
 	statechange_time(time) {
 		this.setState({
-			time: time
+			time: time,
+			visible : false,
+			preview_color : "red"
+		}, () => {
+			this.setState({
+				game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+			}, () => {
+				this.setState({visible:true})
+			})
 		})
 	}
 	statechange_increment(increment) {
-		if (increment[increment.length - 1] >= 0 || increment[increment.length - 1] <= 9) {
-			if (increment <= 120)
-				this.setState({
-					increment: increment
-				})
-			else
-				this.setState({
-					increment: 120
-				})
-		}
-		if (increment === "")
+		this.setState({
+			time_control: "increment" + increment,
+			increment: increment,
+			visible : false,
+			preview_color : "red"
+		}, () => {
 			this.setState({
-				increment: ""
+				game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+			}, () => {
+				this.setState({visible:true})
 			})
+		})
 	}
 	statechange_malus_size(malus_size) {
 		this.setState({
-			malus_size: malus_size
+			malus_size: malus_size,
+			visible : false,
+			preview_color : "red"
+		}, () => {
+			this.setState({
+				game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+			}, () => {
+				this.setState({visible:true})
+			})
 		})
 	}
 	statechange_tableau_size(tableau_size) {
 		this.setState({
-			tableau_size: tableau_size
-		})
-	}
-	statechange_throw_malus() {
-		this.setState({
-			throw_malus: !this.state.throw_malus
+			tableau_size: tableau_size,
+			visible : false,
+			preview_color : "red"
+		}, () => {
+			this.setState({
+				game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+			}, () => {
+				this.setState({visible:true})
+			})
 		})
 	}
 	statechange_mode(mode) {
-		if(mode === "custom" || mode === "ai")
-			this.setState({game_pon : PON_from_game(game_from_settings(this.state))})
 		this.setState({
-			mode: mode
-		})
-	}
-	statechange_throw_discard() {
-		this.setState({
-			throw_discard: !this.state.throw_discard
+			mode: mode,
+			visible : false,
+			preview_color : "red"
+		}, () => {
+			this.setState({
+				game_pon: PON_from_game(game_from_settings(this.state, mode === "solo" ? "red" : "")),
+			}, () => {
+				this.setState({visible:true})
+			})
 		})
 	}
 	statechange(state) {
+		console.log(state)
 		var statecopy = {
 			...state
 		}
 		statecopy.secret = ""
-		this.setState(statecopy)
+		this.setState(statecopy, () => {
+			this.setState({
+				visible : false,
+				preview_color : "black"
+			}, () => {
+				this.setState({
+					game_pon: state.game_pon,
+				}, () => {
+					this.setState({visible:true})
+				})
+			})
+		})
 	}
 
 	statechange_game_pon(game_pon) {
-		this.setState({game_pon : game_pon})
+		this.setState({
+			visible:false,
+			preview_color : "red"
+		}, () => {
+			this.setState({
+				game_pon: game_pon
+			}, () => {
+				this.setState({visible:true})
+			})
+		})
+	}
+
+	componentDidMount() {
+		this.setState({
+			mounted: true
+		})
+	}
+
+	componentWillUnmount() {
+		this.setState({
+			mounted: false
+		})
 	}
 
 	render() {
 		return React.createElement('div', {
-				className: "normal",
+				className: "unranked",
 			},
-			React.createElement("article", {}, React.createElement("b", {}, 'normal games')),
+			React.createElement("article", {}, React.createElement("b", {}, 'unranked games')),
+			this.state.mounted ? React.createElement("div", {
+					style: {
+						zoom: "43%",
+						position: "absolute",
+						left: document.getElementById("clipboardpastebutton").getBoundingClientRect().right * 2
+					}
+				},
+				this.state.visible?React.createElement(game, {
+					black: {
+						username: ""
+					},
+					red: {
+						username: ""
+					},
+					color: this.state.preview_color,
+					game_PON: this.state.game_pon,
+					timer_red: this.state.time,
+					timer_black: this.state.time,
+					offline: true,
+					preview: true,
+					statechange_last_game_pon: this.statechange_last_game_pon
+				}, ) : ""
+			) : "",
 			React.createElement("a", {
 				style: {
 					fontSize: "80%"
@@ -185,9 +298,9 @@ export class normal extends React.Component {
 					fontSize: "50%"
 				}
 			}, "\u00A0"),
-			this.state.time_control === "increment" ? React.createElement(increment, {
+			this.state.time_control.includes("increment") ? React.createElement(increment, {
 				time: this.state.time,
-				increment : this.state.increment,
+				increment: this.state.increment,
 				statechange_time: this.statechange_time,
 				statechange_increment: this.statechange_increment,
 			}, ) : "",
@@ -206,7 +319,7 @@ export class normal extends React.Component {
 			}, "\u00A0"),
 			React.createElement(moves_counter, {
 				statechange: this.statechange_moves_counter,
-				details : this.state.moves_counter
+				details: this.state.moves_counter
 
 			}, ),
 			React.createElement("div", {
@@ -233,9 +346,9 @@ export class normal extends React.Component {
 				}
 			}, "\u00A0"),
 			React.createElement(mode, {
-				mode : this.state.mode,
-				statechange_mode :this.statechange_mode
-			},),
+				mode: this.state.mode,
+				statechange_mode: this.statechange_mode
+			}, ),
 			React.createElement("div", {
 				style: {
 					fontSize: "50%"
@@ -243,15 +356,15 @@ export class normal extends React.Component {
 			}, "\u00A0"),
 
 
-			this.state.mode === "custom" ? React.createElement(game_pon, {
+			React.createElement(game_pon, {
 				statechange: this.statechange_game_pon,
-				details : this.state.game_pon,
-			},) : "",
-			this.state.mode === "custom" ? React.createElement("div", {
+				details: this.state.game_pon,
+			}, ),
+			React.createElement("div", {
 				style: {
 					fontSize: "50%"
 				},
-			}, "\u00A0") : "",
+			}, "\u00A0"),
 
 
 
@@ -261,7 +374,7 @@ export class normal extends React.Component {
 						fontSize: "150%"
 					},
 					onClick: () => this.new_click()
-				}, (this.state.mode === "normal" ?"create room" : "start game")),
+				}, (this.state.mode === "unranked" ? "create lobby" : "start game")),
 			),
 
 			React.createElement(pending_rooms, {
@@ -280,35 +393,37 @@ export class normal extends React.Component {
 
 function game_pon(props) {
 	return React.createElement('div', {
-		className: "game_pon"
-	},
-	React.createElement('span', null, "game pon: "),
-	React.createElement('input', {
-		style: {
-			width: "360px",
-			fontSize: "100%"
+			className: "game_pon"
 		},
-		type: "text",
-		value: props.details,
-		onChange: event => props.statechange(event.target.value)
-	}),
-	" ",
-	React.createElement("button", {
-		style: {
+		React.createElement('span', null, "game pon: "),
+		React.createElement('input', {
+			style: {
+				width: "360px",
+				fontSize: "100%"
+			},
+			type: "text",
+			value: props.details,
+			onChange: event => props.statechange(event.target.value)
+		}),
+		" ",
+		React.createElement("button", {
+			id: "clipboardpastebutton",
+			style: {
 
-		},
-		onClick: async function () {
-			props.statechange(	await navigator.clipboard.readText())
-		},
-	}, "paste from clipboard"),
+			},
+			onClick: async function() {
+				props.statechange(await navigator.clipboard.readText())
+			},
+		}, "paste from clipboard"),
 	)
 }
 
 function name(props) {
 	return React.createElement('div', {
-			className: "room_name"
+			className: "room_name",
+			style : {zIndex : 1, position : "relative"}
 		},
-		React.createElement('span', null, "name: "),
+		React.createElement('span', null, "room name: "),
 		React.createElement('input', {
 			style: {
 				width: "360px",
@@ -325,7 +440,7 @@ function secret(props) {
 	return React.createElement('div', {
 			className: "room_secret"
 		},
-		React.createElement('span', null, "secret: "),
+		React.createElement('span', null, "room password: "),
 		React.createElement('input', {
 			style: {
 				fontSize: "100%",
@@ -402,7 +517,7 @@ function increment(props) {
 				onChange: event => props.statechange_increment(event.target.value)
 			},
 			React.createElement('option', {
-				value: "1"
+				value: "0"
 			}, "0sec"),
 			React.createElement('option', {
 				value: "1"
@@ -453,22 +568,58 @@ function increment(props) {
 	)
 }
 
-function time_control (props) {
+function time_control(props) {
 
 
-	return React.createElement("div", {}, 
+	return React.createElement("div", {},
 		React.createElement('label', {}, "time control: "),
-		React.createElement('input', {style : {width: "15px",height: "15px"},type : "radio", name : "time_control", value : "hourglass", checked  : props.time_control === "hourglass", onChange : () => props.statechange("hourglass")}),
-		React.createElement('label', {onClick : () => props.statechange("hourglass")}, "hourglass\u00A0\u00A0"),
-		React.createElement('input', {style : {width: "15px",height: "15px"},type : "radio", name : "time_control", value : "increment", checked  : props.time_control === "increment", onChange : () => props.statechange("increment")}),
-		React.createElement('label', {onClick : () => props.statechange("increment")}, "increment\u00A0\u00A0"),
-		React.createElement('input', {style : {width: "15px",height: "15px"},type : "radio", name : "time_control", value : "fixed_time", checked  : props.time_control === "fixed_time", onChange : () => props.statechange("fixed_time")}),
-		React.createElement('label', {onClick : () => props.statechange("fixed_time")}, "fixed time\u00A0\u00A0"),
+		React.createElement('input', {
+			style: {
+				width: "15px",
+				height: "15px"
+			},
+			type: "radio",
+			name: "time_control",
+			value: "increment",
+			checked: props.time_control.includes("increment"),
+			onChange: () => props.statechange("increment")
+		}),
+		React.createElement('label', {
+			onClick: () => props.statechange("increment")
+		}, "increment\u00A0\u00A0"),
+		React.createElement('input', {
+			style: {
+				width: "15px",
+				height: "15px"
+			},
+			type: "radio",
+			name: "time_control",
+			value: "hourglass",
+			checked: props.time_control === "hourglass",
+			onChange: () => props.statechange("hourglass")
+		}),
+		React.createElement('label', {
+			onClick: () => props.statechange("hourglass")
+		}, "hourglass\u00A0\u00A0"),
+		React.createElement('input', {
+			style: {
+				width: "15px",
+				height: "15px"
+			},
+			type: "radio",
+			name: "time_control",
+			value: "fixed_time",
+			checked: props.time_control === "fixed_time",
+			onChange: () => props.statechange("fixed_time")
+		}),
+		React.createElement('label', {
+			onClick: () => props.statechange("fixed_time")
+		}, "fixed time\u00A0\u00A0"),
 	)
 }
 
-function fixed_time (props) {
-	return React.createElement("div", {}, 
+function fixed_time(props) {
+	return React.createElement("div", {},
 		React.createElement('label', {}, "time per turn "),
 		React.createElement('select', {
 				style: {
@@ -535,9 +686,9 @@ function fixed_time (props) {
 	)
 }
 
-function hourglass (props) {
+function hourglass(props) {
 
-	return React.createElement("div", {}, 
+	return React.createElement("div", {},
 		React.createElement('label', {}, "hourglass time "),
 		React.createElement('select', {
 				style: {
@@ -653,11 +804,11 @@ function malus(props) {
 				value: "16"
 			}, "16"),
 			React.createElement('option', {
-				value: "18"
+				value: "17"
 			}, "17"),
 			React.createElement('option', {
 				value: "18"
-			}, "16"),
+			}, "18"),
 			React.createElement('option', {
 				value: "19"
 			}, "19"),
@@ -704,122 +855,111 @@ function tableau(props) {
 			React.createElement('option', {
 				value: "7"
 			}, "7"),
+			React.createElement('option', {
+				value: "8"
+			}, "8"),
 		),
 	)
 }
 
 function moves_counter(props) {
 	return React.createElement('div', {
-		className: "moves_counter"
-	},
-	React.createElement('label', {}, "moves counter "),
-	React.createElement('select', {
-			style: {
-				fontSize: "100%"
+			className: "moves_counter"
+		},
+		React.createElement('label', {}, "moves counter "),
+		React.createElement('select', {
+				style: {
+					fontSize: "100%"
+				},
+				value: props.details,
+				onChange: event => props.statechange(event.target.value)
 			},
-			value: props.details,
-			onChange: event => props.statechange(event.target.value)
-		},
-		React.createElement('option', {
-			value: "1"
-		}, "1"),
-		React.createElement('option', {
-			value: "2"
-		}, "2"),
-		React.createElement('option', {
-			value: "3"
-		}, "3"),
-		React.createElement('option', {
-			value: "5"
-		}, "5"),
-		React.createElement('option', {
-			value: "7"
-		}, "7"),
-		React.createElement('option', {
-			value: "8"
-		}, "8"),
-		React.createElement('option', {
-			value: "9"
-		}, "9"),
-		React.createElement('option', {
-			value: "10"
-		}, "10"),
-		React.createElement('option', {
-			value: "11"
-		}, "11"),
-		React.createElement('option', {
-			value: "12"
-		}, "12"),
-		React.createElement('option', {
-			value: "13"
-		}, "13"),
-		React.createElement('option', {
-			value: "15"
-		}, "15"),
-		React.createElement('option', {
-			value: "17"
-		}, "17"),
-		React.createElement('option', {
-			value: "20"
-		}, "20"),
-		React.createElement('option', {
-			value: "25"
-		}, "25"),
-		React.createElement('option', {
-			value: "30"
-		}, "30"),
-		React.createElement('option', {
-			value: "100"
-		}, "100"),
-	),
-)
-}
-
-function throw_enemy(props) {
-	return React.createElement('div', {
-			className: "room_tableau"
-		},
-		React.createElement('label', {}, " throw malus"),
-		React.createElement('input', {
-			type: "checkbox",
-			checked: props.details.throw_malus ? "checked" : "",
-			onClick: () => props.statechange_malus(),
-			onChange: () => {}
-		}),
-		React.createElement('label', {}, " throw discard"),
-		React.createElement('input', {
-			type: "checkbox",
-			checked: props.details.throw_discard ? "checked" : "",
-			onClick: () => props.statechange_discard(),
-			onChange: () => {}
-		}, ),
+			React.createElement('option', {
+				value: "1"
+			}, "1"),
+			React.createElement('option', {
+				value: "2"
+			}, "2"),
+			React.createElement('option', {
+				value: "3"
+			}, "3"),
+			React.createElement('option', {
+				value: "4"
+			}, "4"),
+			React.createElement('option', {
+				value: "5"
+			}, "5"),
+			React.createElement('option', {
+				value: "6"
+			}, "6"),
+			React.createElement('option', {
+				value: "7"
+			}, "7"),
+			React.createElement('option', {
+				value: "8"
+			}, "8"),
+			React.createElement('option', {
+				value: "9"
+			}, "9"),
+			React.createElement('option', {
+				value: "10"
+			}, "10"),
+			React.createElement('option', {
+				value: "11"
+			}, "11"),
+			React.createElement('option', {
+				value: "12"
+			}, "12"),
+			React.createElement('option', {
+				value: "13"
+			}, "13"),
+			React.createElement('option', {
+				value: "15"
+			}, "15"),
+			React.createElement('option', {
+				value: "17"
+			}, "17"),
+			React.createElement('option', {
+				value: "20"
+			}, "20"),
+			React.createElement('option', {
+				value: "25"
+			}, "25"),
+			React.createElement('option', {
+				value: "30"
+			}, "30"),
+		),
 	)
 }
 
 function mode(props) {
-	return React.createElement("div", {}, 
+	return React.createElement("div", {},
 		React.createElement('label', {}, "mode:\u00A0\u00A0"),
 		React.createElement('input', {
 			style: {
 				width: "15px",
 				height: "15px"
 			},
-			name : "mode",
+			name: "mode",
 			type: "radio",
 			id: "timed_checkbox",
-			checked: props.mode === "normal",
+			checked: props.mode === "unranked",
 			onClick: () => {
-				props.statechange_mode("normal")
+				props.statechange_mode("unranked")
 			},
 			onChange: () => {}
 		}),
-		React.createElement('label', {onClick: () => { props.statechange_mode("normal") },}, "vs. player\u00A0\u00A0"),
+		React.createElement('label', {
+			onClick: () => {
+				props.statechange_mode("unranked")
+			},
+		}, "vs. player\u00A0\u00A0"),
 		React.createElement('input', {
 			style: {
 				width: "15px",
 				height: "15px"
 			},
-			name : "mode",
+			name: "mode",
 			type: "radio",
 			id: "timed_checkbox",
 			checked: props.mode === "ai",
@@ -828,28 +968,35 @@ function mode(props) {
 			},
 			onChange: () => {}
 		}),
-		React.createElement('label', {onClick: () => { props.statechange_mode("ai") },}, "vs. AI\u00A0\u00A0"),
+		React.createElement('label', {
+			onClick: () => {
+				props.statechange_mode("ai")
+			},
+		}, "vs. AI\u00A0\u00A0"),
 		React.createElement('input', {
 			style: {
 				width: "15px",
 				height: "15px"
 			},
-			name : "mode",
+			name: "mode",
 			type: "radio",
 			id: "timed_checkbox",
-			checked: props.mode === "custom",
+			checked: props.mode === "solo",
 			onClick: () => {
-				props.statechange_mode("custom")
+				props.statechange_mode("solo")
 			},
 			onChange: () => {}
 		}),
-		React.createElement('label', {onClick: () => { props.statechange_mode("custom") },}, "custom\u00A0\u00A0"),
+		React.createElement('label', {
+			onClick: () => {
+				props.statechange_mode("solo")
+			},
+		}, "solo\u00A0\u00A0"),
 	)
 }
 
 function pending_rooms(props) {
 	function join_click(redid, secret) {
-		console.log(redid)
 		if (redid != socket.id) {
 			if (secret)
 				socket.emit("client_join", {
@@ -874,8 +1021,8 @@ function pending_rooms(props) {
 						cursor: "pointer"
 					},
 				}, React.createElement('u', {
-					onClick: () => room.red_user.initial_socketid != socket.id ? props.statechange(room) : ""
-				}, room.settings.name), //missing roomname click for roomdetails
+					onClick: () => props.statechange(room.settings)
+				}, room.settings.name),
 				room.settings.secret ? " 🔒" : " ", room.red_user.initial_socketid != socket.id && room.red_user.socketid_cookie_on_reation != getCookie("socketid") ? React.createElement('button', {
 					onClick: () => join_click(room.red_user.initial_socketid, room.settings.secret),
 					style: {
@@ -895,7 +1042,7 @@ function getCookie(n) {
 	return a ? a[1] : '';
 }
 
-function game_from_settings(settings) {
+function game_from_settings(settings, startcolor) {
 	var game = {
 		redmalus: [],
 		redstock: [],
@@ -922,42 +1069,37 @@ function game_from_settings(settings) {
 		blackfoundation2: [],
 		blackfoundation3: [],
 		moves_counter: settings.moves_counter,
-		lowest_malus_red : settings.malus_size,
-		lowest_malus_black : settings.malus_size,
+		lowest_malus_red: settings.malus_size,
+		lowest_malus_black: settings.malus_size,
 		time_control: settings.time_control,
 		timer_red: settings.time_control === "hourglass" ? (settings.time / 2) : settings.time,
 		timer_black: settings.time_control === "hourglass" ? (settings.time / 2) : settings.time,
 		abort_counter: 0,
 		turn_counter: 0,
 	}
-	var blackdeck = shuffle(freshDeck("black"))
 	var reddeck = shuffle(freshDeck("red"))
-	for (var p = 0; p < 2; p++)
-		for (var ms = 0; ms < settings.malus_size; ms++) {
-			if (p === 1) {
-				while(reddeck[reddeck.length - 1].value === 13|| reddeck[reddeck.length - 1].value === 1) {
-					reddeck = shuffle(reddeck)
-				}
-					
-			}
-			else
-				while(blackdeck[blackdeck.length - 1].value === 13 || blackdeck[blackdeck.length - 1].value === 1){
-					blackdeck = shuffle(blackdeck)
-				}
-			var card = p === 0 ? blackdeck.pop() : reddeck.pop()
-			game[(p === 0 ? "black" : "red") + "malus"].push(card)
+	for (var ms = 0; ms < settings.malus_size; ms++) {
+		while (reddeck[reddeck.length - 1].value === 13 || reddeck[reddeck.length - 1].value === 1) {
+			reddeck = shuffle(reddeck)
+		}
+		var card = reddeck.pop()
+		game.redmalus.push(card)
+		game.blackmalus.push(new Card("black", card.suit, card.value))
 	}
-
 	game.turn = shuffle(["red", "black"])[0]
-	for (var p = 0; p < 2; p++)
-		for (var tableau_nr = 0; tableau_nr < 4; tableau_nr++)
-			for (var ts = 0; ts < settings.tableau_size; ts++) {
+	if (startcolor)
+		game.turn = startcolor
+	for (var tableau_nr = 0; tableau_nr < 4; tableau_nr++)
+		for (var ts = 0; ts < settings.tableau_size; ts++) {
 
-				var card = (p === 0 ? blackdeck.pop() : reddeck.pop())
-				game[((p === 0 ? "black" : "red") + "tableau" + tableau_nr)].push(card)
-			}
-		game.redstock = reddeck
-		game.blackstock = blackdeck
+			var card = reddeck.pop()
+			game["redtableau" + tableau_nr].push(card)
+			game["blacktableau" + tableau_nr].push(new Card("black", card.suit, card.value))
+		}
+
+	game.redstock = reddeck
+	for (var c of reddeck)
+		game.blackstock.push(new Card("black", c.suit, c.value))
 	return game
 }
 
@@ -972,7 +1114,7 @@ class Card {
 
 function freshDeck(color) {
 	const suits = ["hearts", "diamonds", "spades", "clubs"];
-	const values = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+	const values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 	return suits.flatMap(suit => {
 		return values.map(value => {
 			return new Card(color, suit, value)

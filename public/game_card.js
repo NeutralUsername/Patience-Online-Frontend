@@ -1,9 +1,8 @@
-
 export function game_card(props) {
 	function card_images() {
 		if (!props.faceup)
 			if (props.color === 'red') return 'url("https://patienceonlinecards.s3.eu-central-1.amazonaws.com/cards/Card_back_01.svg")'
-			else return 'url("https://patienceonlinecards.s3.eu-central-1.amazonaws.com/cards/Card_back_06.svg")'
+		else return 'url("https://patienceonlinecards.s3.eu-central-1.amazonaws.com/cards/Card_back_06.svg")'
 		else {
 			if (props.suit === "spades") {
 				if (props.value === 1) return 'url("https://patienceonlinecards.s3.eu-central-1.amazonaws.com/cards/Cards-A-Spade.svg")'
@@ -70,7 +69,7 @@ export function game_card(props) {
 
 	return (
 		React.createElement("div", {
-			id : props.PON,
+			id: props.PON,
 			draggable: "true",
 			data_stack: props.name,
 			onDragStart: event => {
@@ -81,11 +80,11 @@ export function game_card(props) {
 			},
 			onDragEnd: e => props.statechange_dragging(false, e),
 			style: {
-				cursor: props.dragstart_event(props) ? "grab": "default",
+				cursor: props.dragstart_event(props) ? "grab" : "default",
 				borderRadius: '7px',
 				padding: '.4vmax',
-				marginRight: (props.player && props.name.includes('malus')) || (!props.player && props.name.includes('stock'))  ? !props.uppermost ? "max(-4vmax, -7vmin)" : 0 : !props.name.includes('tableau') && !props.name.includes("stock") && !props.name.includes("malus") ? !props.uppermost ? 'max(-2.9vmax, -5.5vmin)' : '0' : props.name.includes('tableau') && !props.player && !props.uppermost ? 'max(-2.9vmax, -5.5vmin)' : '0',
-				marginLeft: (props.player && props.name.includes('stock') )|| (!props.player && props.name.includes('malus')) ? !props.uppermost ? "max(-4vmax, -7vmin)" : 0 : props.name.includes('tableau') && props.player ? !props.uppermost ? 'max(-2.9vmax, -5.5vmin)' : '0' : '0',
+				marginRight: (props.player && props.name.includes('malus')) || (!props.player && props.name.includes('stock')) ? !props.uppermost ? "max(-4vmax, -7vmin)" : 0 : !props.name.includes('tableau') && !props.name.includes("stock") && !props.name.includes("malus") ? !props.uppermost ? 'max(-2.9vmax, -5.5vmin)' : '0' : props.name.includes('tableau') && !props.player && !props.uppermost ? 'max(-2.9vmax, -5.5vmin)' : '0',
+				marginLeft: (props.player && props.name.includes('stock')) || (!props.player && props.name.includes('malus')) ? !props.uppermost ? "max(-4vmax, -7vmin)" : 0 : props.name.includes('tableau') && props.player ? !props.uppermost ? 'max(-2.9vmax, -5.5vmin)' : '0' : '0',
 				height: 6 + "vmax",
 				width: 4 + "vmax",
 				maxHeight: '11vmin',
@@ -97,4 +96,3 @@ export function game_card(props) {
 		}, )
 	)
 }
- 

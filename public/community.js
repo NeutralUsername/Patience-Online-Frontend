@@ -58,7 +58,7 @@ export class community extends React.Component {
 		if (this.state.content === "leaderboard") {
 			components.push(React.createElement(community_leaderboard, {
 				key: index++,
-				leaderboard : this.props.leaderboard
+				leaderboard: this.props.leaderboard
 			}))
 		}
 		return React.createElement('div', {

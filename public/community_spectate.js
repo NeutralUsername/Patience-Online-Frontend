@@ -13,7 +13,7 @@ export class community_spectate extends React.Component {
 		return React.createElement('div', {
 				className: "community_spectate",
 			},
-			React.createElement("article", {}, React.createElement("b", {}, 'spectate ranked games')),
+			React.createElement("article", {}, React.createElement("b", {}, 'spectate active games')),
 			React.createElement("div", {
 				style: {
 					fontSize: "10%"

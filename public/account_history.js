@@ -1,4 +1,6 @@
-import { game } from "./game.js"
+import {
+	game
+} from "./game.js"
 import {
 	socket
 } from "./index.js"
@@ -22,7 +24,7 @@ export class account_history extends React.Component {
 			React.createElement(history, {
 				history: this.props.history,
 				username: this.props.username,
-				start_offline_game : this.props.start_offline_game
+				start_offline_game: this.props.start_offline_game
 			}),
 		)
 	}
@@ -33,18 +35,24 @@ function history(props) {
 		React.createElement('ul', {
 			className: "history"
 		}, props.history.map((history, index) => {
-			var player_color = history.game.r === props.username ?"red" :"black"
+			var player_color = history.game.r === props.username ? "red" : "black"
 			return React.createElement("li", {
 					key: index,
-				}, React.createElement('u', {},history.game.r === props.username ? ("vs. " + (history.game.b ? history.game.b : "guest")) : (" vs. " + (history.game.r ? history.game.r : "guest"))),
-					React.createElement("b", {}, (history.game.c[0] === "r" && player_color === "red" || history.game.c[0] === "b" && player_color === "black") ? "\u00A0win" : history.game.c[0] === "d" ? "\u00A0draw " : "\u00A0loss"),
-					React.createElement("i", {}, "\u00A0"+ history.game.started,),
-					"\u00A0",
-			 	  React.createElement('button', {
-					onClick: () => props.start_offline_game(history.game.PON+history.actions+"="+history.game.c,{username : history.game.r, elo : history.game.re}, {username : history.game.b, elo : history.game.be}),
-						style: {
-							cursor: "pointer"
-						}
+				}, React.createElement('u', {}, history.game.r === props.username ? ("vs. " + (history.game.b ? history.game.b : "guest")) : (" vs. " + (history.game.r ? history.game.r : "guest"))),
+				React.createElement("b", {}, (history.game.c[0] === "r" && player_color === "red" || history.game.c[0] === "b" && player_color === "black") ? "\u00A0win" : history.game.c[0] === "d" ? "\u00A0draw " : "\u00A0loss"),
+				React.createElement("i", {}, "\u00A0" + history.game.started, ),
+				"\u00A0",
+				React.createElement('button', {
+					onClick: () => props.start_offline_game(history.game.PON + history.actions + "=" + history.game.c, {
+						username: history.game.r,
+						elo: history.game.re
+					}, {
+						username: history.game.b,
+						elo: history.game.be
+					}),
+					style: {
+						cursor: "pointer"
+					}
 				}, "analyze"), React.createElement("div", {
 					style: {
 						fontSize: "10%"

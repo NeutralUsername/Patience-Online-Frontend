@@ -28,8 +28,8 @@ export class menu_bar extends React.Component {
 						fontSize: "130%"
 					},
 					key: index++,
-					onClick: () => this.props.statechange_content("normal"),
-				}, "normal"))
+					onClick: () => this.props.statechange_content("unranked"),
+				}, "lobbies"))
 				components.push("\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0")
 
 				components.push(React.createElement('button', {
@@ -88,9 +88,9 @@ export class menu_bar extends React.Component {
 		return (
 			React.createElement('div', {
 					className: "menu_bar",
-					style : {
-						position : "absolute",
-						width : "10000px"
+					style: {
+						position: "absolute",
+						width: "10000px"
 					}
 				},
 				components,

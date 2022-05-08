@@ -144,7 +144,7 @@ export class account extends React.Component {
 				}, React.createElement("b", {
 					key: index++,
 				}, 'account')),
-				
+
 				React.createElement("input", {
 					key: index++,
 					style: {
@@ -193,13 +193,13 @@ export class account extends React.Component {
 				}, ))
 
 			if (this.state.content === "history")
-			componets.push(React.createElement(account_history, {
-				key: index++,
-				username: this.props.username,
-				history : this.props.history,
-				start_offline_game : this.props.start_offline_game
-			}, ))
-			
+				componets.push(React.createElement(account_history, {
+					key: index++,
+					username: this.props.username,
+					history: this.props.history,
+					start_offline_game: this.props.start_offline_game
+				}, ))
+
 		}
 		return React.createElement('div', {
 				className: "Account",
