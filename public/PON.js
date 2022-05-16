@@ -26,12 +26,11 @@ export function game_from_PON(PON) {
 		blackfoundation2: [],
 		blackfoundation3: [],
 		moves_counter: Number(status[0]),
-		time_control: status[1],
-		timer_red: Number(status[2]),
-		timer_black: Number(status[3]),
-		abort_counter: Number(status[4]),
-		turn_counter: Number(status[5]),
-		turn: status[6],
+		timer_red: Number(status[1]),
+		timer_black: Number(status[2]),
+		increment: Number(status[3]),
+		turn_counter: Number(status[4]),
+		turn: status[5],
 	}
 	var board = PON.substring(PON.indexOf("{") + 1, PON.indexOf("}")).split("/")
 	for (var i = 0; i < board.length; i++) {
@@ -491,21 +490,18 @@ export function PON_from_game(game, live) {
 				if (stack_key === "moves_counter")
 					PON += game[stack_key] + ","
 			if (i === 1)
-				if (stack_key === "time_control")
-					PON += game[stack_key] + ","
-			if (i === 2)
 				if (stack_key === "timer_red")
 					PON += game[stack_key] + ","
-			if (i === 3)
+			if (i === 2)
 				if (stack_key === "timer_black")
 					PON += game[stack_key] + ","
-			if (i === 4)
-				if (stack_key === "abort_counter")
+			if (i === 3)
+				if (stack_key === "increment")
 					PON += game[stack_key] + ","
-			if (i === 5)
+			if (i === 4)
 				if (stack_key === "turn_counter")
 					PON += game[stack_key] + ","
-			if (i === 6)
+			if (i === 5)
 				if (stack_key === "turn")
 					PON += game[stack_key]
 

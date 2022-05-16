@@ -5,7 +5,7 @@ import {
 	SHA256
 } from "./SHA256.js"
 
-export class account_creation extends React.Component {
+export class create_account extends React.Component {
 	constructor(props) {
 		super(props)
 		this.state = {
@@ -127,7 +127,7 @@ export class account_creation extends React.Component {
 				},
 				className: "Account",
 			},
-			React.createElement("article", {}, React.createElement("b", {}, 'register')),
+			React.createElement("article", {}, React.createElement("b", {}, 'create account')),
 			React.createElement("div", {}, "\u00A0"),
 			React.createElement(
 				username, {

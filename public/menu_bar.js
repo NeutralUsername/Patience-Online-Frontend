@@ -21,15 +21,15 @@ export class menu_bar extends React.Component {
 	render() {
 		var components = []
 		var index = 0
-		if (this.props.content != "change_password") {
-			if (this.props.content != "game" && this.props.content != "sandbox") {
+		if (this.props.content != "link_change_password") {
+			if (this.props.content != "game") {
 				components.push(React.createElement('button', {
 					style: {
 						fontSize: "130%"
 					},
 					key: index++,
-					onClick: () => this.props.statechange_content("unranked"),
-				}, "lobbies"))
+					onClick: () => this.props.statechange_content("casual"),
+				}, "casual"))
 				components.push("\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0")
 
 				components.push(React.createElement('button', {
@@ -50,25 +50,44 @@ export class menu_bar extends React.Component {
 				}, "community"))
 				components.push("\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0")
 
-				components.push(React.createElement('button', {
-					style: {
-						fontSize: "110%"
-					},
-					key: index++,
-					onClick: () => this.props.statechange_content("account"),
-				}, "account"))
-				components.push("\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0")
-
-			}
-			if (this.props.username) {
-				components.push(React.createElement('button', {
-					style: {
-						fontSize: "100%"
-					},
-					key: index++,
-					onClick: () => this.props.logout_click(),
-					style: {},
-				}, "logout"))
+				if (!this.props.username) {
+					components.push(React.createElement('button', {
+						style: {
+							fontSize: "90%"
+						},
+						key: index++,
+						onClick: () => this.props.statechange_content("login"),
+					}, "login"))
+					components.push("\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0")
+	
+					components.push(React.createElement('button', {
+						style: {
+							fontSize: "90%"
+						},
+						key: index++,
+						onClick: () => this.props.statechange_content("create_account"),
+					}, "create account"))
+					components.push("\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0")
+				}
+				if (this.props.username ) {
+					components.push(React.createElement('button', {
+						style: {
+							fontSize: "90%"
+						},
+						key: index++,
+						onClick: () => this.props.statechange_content("player_profile"),
+					}, "profile"))
+					components.push("\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0")
+	
+					components.push(React.createElement('button', {
+						style: {
+							fontSize: "100%"
+						},
+						key: index++,
+						onClick: () => this.props.logout_click(),
+						style: {},
+					}, "logout"))
+				}
 			}
 		}
 		if (this.props.content != "game" && this.props.content != "sandbox")
@@ -90,7 +109,6 @@ export class menu_bar extends React.Component {
 					className: "menu_bar",
 					style: {
 						position: "absolute",
-						width: "10000px"
 					}
 				},
 				components,

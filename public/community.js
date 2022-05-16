@@ -5,6 +5,9 @@ import {
 	community_spectate
 } from "./community_spectate.js"
 import {
+	community_search
+} from "./community_search.js"
+import {
 	socket
 } from "./index.js"
 export class community extends React.Component {
@@ -16,6 +19,7 @@ export class community extends React.Component {
 		this.statechange_content = this.statechange_content.bind(this)
 		this.statechange_content_spectate = this.statechange_content_spectate.bind(this)
 		this.statechange_content_leaderboard = this.statechange_content_leaderboard.bind(this)
+		this.statechange_content_search = this.statechange_content_search.bind(this)
 	}
 	statechange_content() {
 		if (this.state.content === "spectate")
@@ -42,6 +46,13 @@ export class community extends React.Component {
 			})
 	}
 
+	statechange_content_search(){
+		if (this.state.content != "search")
+		this.setState({
+			content: "search"
+		})
+	}
+
 	componentWillUnmount() {
 
 	}
@@ -61,6 +72,11 @@ export class community extends React.Component {
 				leaderboard: this.props.leaderboard
 			}))
 		}
+		if (this.state.content === "search") {
+			components.push(React.createElement(community_search, {
+				key: index++,
+			}))
+		}
 		return React.createElement('div', {
 				className: "Account",
 			},
@@ -73,9 +89,9 @@ export class community extends React.Component {
 					height: "17px"
 				},
 				type: "radio",
-				name: "account",
+				name: "community",
 				checked: this.state.content === "leaderboard",
-				onChange: this.statechange_content
+				onChange: this.statechange_content_leaderboard
 			}, ),
 			React.createElement("label", {
 				type: "radio",
@@ -93,13 +109,31 @@ export class community extends React.Component {
 				type: "radio",
 				name: "community",
 				checked: this.state.content === "spectate",
-				onChange: this.statechange_content
+				onChange: this.statechange_content_spectate
 			}, ),
 			React.createElement("label", {
 				type: "radio",
 				name: "spectate",
 				onClick: this.statechange_content_spectate
 			}, "spectate"),
+			
+			"\u00A0\u00A0\u00A0",
+
+			React.createElement("input", {
+				style: {
+					width: "17px",
+					height: "17px"
+				},
+				type: "radio",
+				name: "community",
+				checked: this.state.content === "search",
+				onChange: this.statechange_content_search
+			}, ),
+			React.createElement("label", {
+				type: "radio",
+				name: "spectate",
+				onClick: this.statechange_content_search
+			}, "search"),
 
 			React.createElement("div", {}, "\u00A0"),
 			components

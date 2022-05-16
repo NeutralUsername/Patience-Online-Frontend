@@ -5,7 +5,7 @@ import {
 	SHA256
 } from "./SHA256.js"
 
-export class account_change_password extends React.Component {
+export class change_password extends React.Component {
 	constructor(props) {
 		super(props)
 		this.state = {
@@ -82,12 +82,12 @@ export class account_change_password extends React.Component {
 			React.createElement("article", {}, React.createElement("b", {}, 'change password')),
 			React.createElement("a", {
 				style: {
-					fontSize: "90%"
+					fontSize: "80%"
 				},
 				href: "",
 				onClick: e => {
 					e.preventDefault()
-					this.props.statechange_content("usercp")
+					this.props.statechange_content("player_profile")
 				}
 			}, "back"),
 			React.createElement("article", {}, '\u00A0'),

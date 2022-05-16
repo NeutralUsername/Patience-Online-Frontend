@@ -2,9 +2,9 @@ import {
 	socket
 } from "./index.js"
 import {
-	account_login
-} from "./account_login.js";
-export class account_forgot_password extends React.Component {
+	login
+} from "./login.js";
+export class forgot_password extends React.Component {
 	constructor(props) {
 		super(props)
 		this.state = {
@@ -76,7 +76,7 @@ export class account_forgot_password extends React.Component {
 				React.createElement('label', {}, "\u00A0\u00A0" + this.state.status)
 			)
 		else
-			return React.createElement(account_login)
+			return React.createElement(login)
 	}
 }
 

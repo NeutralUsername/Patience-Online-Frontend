@@ -5,9 +5,9 @@ import {
 	SHA256
 } from "./SHA256.js"
 import {
-	account_forgot_password
-} from "./account_forgot_password.js"
-export class account_login extends React.Component {
+	forgot_password
+} from "./forgot_password.js"
+export class login extends React.Component {
 	constructor(props) {
 		super(props)
 		this.state = {
@@ -89,7 +89,6 @@ export class account_login extends React.Component {
 							status_login_button: "...."
 						})
 					},
-					className: "Account",
 				},
 				React.createElement("article", {}, React.createElement("b", {}, 'login')),
 				React.createElement("div", {}, "\u00A0"),
@@ -130,7 +129,7 @@ export class account_login extends React.Component {
 				React.createElement('label', {}, "\u00A0\u00A0" + this.state.status_login_button)
 			)
 		else
-			return React.createElement(account_forgot_password, {}, "")
+			return React.createElement(forgot_password, {}, "")
 	}
 
 

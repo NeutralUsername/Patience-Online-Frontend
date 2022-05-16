@@ -21,7 +21,7 @@ export class tutorial extends React.Component {
 				href: "",
 				onClick: e => {
 					e.preventDefault()
-					this.props.statechange_content("unranked")
+					this.props.statechange_content("casual")
 				}
 			}, "back"),
 			React.createElement("article", {}, '\u00A0'),

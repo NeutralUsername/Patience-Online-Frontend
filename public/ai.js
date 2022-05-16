@@ -13,9 +13,8 @@ var tableaunames = [
 
 function weight(game, branch) {
 	var points = 0
-	if (game[game.turn + "malus"].length === 0 && game[game.turn + "reserve"].length === 0) {
+	if (game[game.turn + "malus"].length === 0 && game[game.turn + "reserve"].length === 0) 
 		points += 9999999
-	}
 	if (game[game.turn + "reserve"].length != 0)
 		points -= 250
 	if (game[game.turn + "stock"].length + game[game.turn + "discard"].length === 0)

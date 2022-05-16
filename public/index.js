@@ -5,14 +5,11 @@ import {
 	tutorial
 } from "./tutorial.js";
 import {
-	lobbies
-} from "./lobbies.js";
+	casual
+} from "./casual.js";
 import {
 	ranked
 } from "./ranked.js";
-import {
-	account
-} from "./account.js"
 import {
 	link_change_password
 } from "./link_change_password.js"
@@ -22,6 +19,18 @@ import {
 import {
 	menu_bar
 } from "./menu_bar.js"
+import {
+	login
+} from "./login.js"
+import {
+	create_account
+} from "./create_account.js"
+import {
+	profile
+} from "./profile.js"
+import {
+	change_password
+} from "./change_password.js";
 
 window.location.hostname.includes("www.") ? window.location.replace('https://patienceonline.com/') : ""
 export const socket = io();
@@ -80,7 +89,9 @@ export class Index extends React.Component {
 		super(props)
 		this.state = JSON.parse(JSON.stringify(this.props))
 		socket.on("server_update_pendingrooms", (data) => {
-			this.setState(data)
+			if(data.pending_rooms.length > 1)
+				data.pending_rooms.reverse()
+			this. setState(data)
 		})
 		socket.on("server_update_activerooms", (data) => {
 			this.setState(data)
@@ -92,76 +103,49 @@ export class Index extends React.Component {
 		})
 		socket.on("server_update_history", (data) => {
 			console.log(data)
-			var history = []
-			if (data != false)
-				for (var game of data.games) {
-					var actions = data.actions.filter(a => a.id === game.id)
-					if (actions.length === 0)
-						actions.push({
-							ap: ""
-						})
-					history.push({
-						game: game,
-						actions: actions[0].ap
-					})
+			if(data.games) {
+				var history = []
+				if (data != false)
+					for (var game of data.games) {
+						history.push(game)
+					}
+				this.setState({
+					history: history
+				})
+			}
+			else if(data) {
+				if(this.state.history)
+					this.state.history.reverse()
+				else
+					this.state.history = []
+				this.state.history.push(data)
+				this.state.history.reverse()
 				}
-			this.setState({
-				history: history
-			})
+		})
+		socket.on("server_update_elo", (data) => {
+			console.log(data)
+			var u = this.state.user
+			u.elo = data
+			this.setState({user : u})
 		})
 
 		socket.on("start_game", (data) => {
 			console.log("starting game")
-			if (!this.props.username && !data.spectator) {
+			if (!this.props.user && !data.spectator) {
 				var a = new Date();
 				a = new Date(a.getTime() + 10 * (1000 * 60 * 60 * 24 * 365));
 				document.cookie = "active_game=" + socket.id + "; expires=" + a.toUTCString() + ';';
 			}
 			this.setState({
-				content: "unranked"
-			}, () => {
-				this.setState({
-					content: "game",
-					game_PON: data.game_PON + data.actions_PON,
-					color: data.color,
-					black: data.black,
-					red: data.red,
-					last_action: data.last_action,
-					spectator: data.spectator ? true : false,
-					offline: false
-				})
+				content: "game",
+				game_PON: data.game_PON + data.actions_PON,
+				color: data.color,
+				black: data.black,
+				red: data.red,
+				last_action: data.last_action,
+				spectator: data.spectator ? true : false,
+				offline: false
 			})
-		})
-		socket.on("server_game_end", (data) => {
-			if (data != "spectator_leave") {
-				alert("winner: " + data.outcome.winner + "\nevent: " + data.outcome.event)
-				if (data.outcome[this.state.color + "elo"]) {
-					this.setState({
-						elo: data.outcome[this.state.color + "elo"]
-					})
-				}
-			}
-			this.setState({
-				red: {},
-				black: {},
-				game_PON: "",
-				acton_action: "",
-				timer_black: 0,
-				timer_red: 0,
-				color: "",
-				content: "unranked",
-			})
-			if (data.replay) {
-				console.log(data.replay.game.PON + data.replay.actions + "=")
-				if (this.props.username) {
-					this.state.history.reverse()
-					this.state.history.push({
-						game: data.replay.game,
-						actions: data.replay.actions
-					})
-					this.state.history.reverse()
-				}
-			}
 		})
 
 		this.menubar_logout_click = this.menubar_logout_click.bind(this)
@@ -179,16 +163,16 @@ export class Index extends React.Component {
 	}
 
 	componentDidMount() {
-		socket.emit("update_history")
+		socket.emit("client_request_history")
 	}
 
-	start_offline_game(gamePON, red, black) {
+	start_offline_game(gamePON, red, black, color) {
 		this.setState({
 			red: red,
 			black: black,
 			content: "game",
 			game_PON: gamePON,
-			color: red.username === this.props.username ? "red" : "black",
+			color: color,
 			offline: true,
 		})
 	}
@@ -199,7 +183,7 @@ export class Index extends React.Component {
 			black: {},
 			game_PON: "",
 			color: "",
-			content: "unranked",
+			content: "casual",
 			offline: false,
 		})
 	}
@@ -228,10 +212,10 @@ export class Index extends React.Component {
 					key: index++,
 				})
 			)
-		if (this.state.content === "unranked")
+		if (this.state.content === "casual")
 			components.push(
-				React.createElement(lobbies, {
-					id: "unranked",
+				React.createElement(casual, {
+					id: "casual",
 					key: index++,
 					name: shuffle(socket.id.split("")).join(""), //lobby default value
 					secret: "",
@@ -240,12 +224,13 @@ export class Index extends React.Component {
 					moves_counter: 5,
 					malus_size: 16,
 					tableau_size: 5,
+					color: "red",
 					mode: "unranked",
 					time_control: "increment",
 					game_pon: "",
 					pending_rooms: this.state.pending_rooms,
-					username: this.props.username,
-					elo: this.props.elo,
+					username: this.props.user.username,
+					elo: this.props.user.elo,
 					start_offline_game: this.start_offline_game,
 					statechange_content: this.statechange_content,
 				})
@@ -270,15 +255,8 @@ export class Index extends React.Component {
 		if (this.state.content === "ranked")
 			components.push(
 				React.createElement(ranked, {
-					username: this.props.username,
+					username: this.props.user.username,
 					id: "ranked",
-					key: index++,
-				})
-			)
-		if (this.state.content === "admincp")
-			components.push(
-				React.createElement(admincp, {
-					id: "admincp",
 					key: index++,
 				})
 			)
@@ -299,13 +277,47 @@ export class Index extends React.Component {
 				})
 			)
 		}
-		if (this.state.content === "account")
+		if (this.state.content === "login")
 			components.push(
-				React.createElement(account, {
-					username: this.props.username,
+				React.createElement(login, {
 					key: index++,
+				})
+			)
+		if (this.state.content === "create_account")
+		components.push(
+			React.createElement(create_account, {
+				key: index++,
+			})
+		)
+		if (this.state.content === "player_profile")
+			components.push(
+				React.createElement(profile, {
+					key: index++,
+					user : this.state.user,
+					player : true,
 					history: this.state.history,
-					start_offline_game: this.start_offline_game
+					start_offline_game: this.start_offline_game,
+					statechange_content: this.statechange_content,
+				})
+			)
+		if (this.state.content === "profile")
+			components.push(
+				React.createElement(profile, {
+					key: index++,
+					user : this.state.profile_user,
+					player : false,
+					history: this.state.profile_history,
+					start_offline_game: this.start_offline_game,
+					statechange_content: this.statechange_content,
+				})
+			)
+		if (this.state.content === "change_password")
+			components.push(
+				React.createElement(change_password, {
+					key: index++,
+					user : this.state.user,
+					player : false,
+					statechange_content: this.statechange_content
 				})
 			)
 		return React.createElement('div', {
@@ -313,17 +325,16 @@ export class Index extends React.Component {
 					e.preventDefault()
 				},
 				style: {
-					overflow: ('ontouchstart' in document.documentElement && /mobi/i.test(navigator.userAgent)) ? "" : "hidden",
 					position: "absolute",
-					width: "100%",
-					height: "100%",
+					width: this.state.content != "game" ? "90%" : "100%",
+					height: this.state.content != "game" ? "90%" : "100%",
 					top: (this.state.content === "game" || this.state.content === "analysis_board" ? "0%" : "4%"),
 					left: (this.state.content === "game" || this.state.content === "analysis_board" ? "0%" : "4%")
 				},
 				className: "Index",
 			},
 			React.createElement(menu_bar, {
-				username: this.props.username,
+				username: this.props.user.username,
 				elo: this.state.elo,
 				content: this.state.content,
 				statechange_content: this.statechange_content,
@@ -335,14 +346,14 @@ export class Index extends React.Component {
 						top: "3.5vmax",
 					}
 				},
-				(this.props.username && this.state.content != "game") ? React.createElement("i", {}, "signed in as ", React.createElement("b", {}, this.props.username)) : "",
-				(this.state.elo && this.state.content != "game") ? React.createElement("div", {}, React.createElement("i", {}, "elo:  ", React.createElement("b", {}, this.state.elo))) : "",
-				(this.state.elo && this.state.content != "game") ? React.createElement("div", {}, "\u00A0") : "",
+				(this.props.user.username && this.state.content != "game") ? React.createElement("i", {onClick : () => this.statechange_content("player_profile"), style : {cursor : "pointer"}}, "signed in as ", React.createElement("b", {}, this.props.user.username)) : "",
+				(this.state.user.elo && this.state.content != "game") ? React.createElement("div", {onClick : () => this.statechange_content("player_profile"), style : {cursor : "pointer"}}, React.createElement("i", {}, "rating:  ", React.createElement("b", {}, this.state.user.elo))) : "",
+				(this.state.user.elo && this.state.content != "game") ? React.createElement("div", {}, "\u00A0") : "",
 			),
 			React.createElement("div", {
 				style: {
 					position: "absolute",
-					top: this.state.content != "game" ? this.props.username ? "7vmax" : "3.5vmax" : "",
+					top: this.state.content != "game" ? this.props.user.username ? "7vmax" : "3.5vmax" : "",
 					zoom: this.state.content === "game" ? "98%" : "",
 				}
 			}, components)

@@ -40,7 +40,7 @@ function active_rooms(props) {
 		}, props.active_rooms.map((room, index) => {
 			return React.createElement("li", {
 					key: index,
-				}, React.createElement('u', {}, room.red_username + " vs. " + room.black_username), //missing roomname click for roomdetails
+				}, React.createElement('u', {}, room.name), //missing roomname click for roomdetails
 				room.secret ? " 🔒" : " ", React.createElement('button', {
 					onClick: () => spectate_click(room.initial_black_socketid, room.initial_red_socketid),
 					style: {

@@ -7,12 +7,11 @@ import {
 import {
 	game
 } from "./game.js"
-export class lobbies extends React.Component {
+export class casual extends React.Component {
 	constructor(props) {
 		super(props)
 		this.state = JSON.parse(JSON.stringify(this.props))
 		this.state.last_game_pon = ""
-		this.state.preview_color = "red"
 		this.state.visible = true
 		this.state.game_pon = PON_from_game(game_from_settings(this.state))
 		this.statechange_name = this.statechange_name.bind(this)
@@ -22,7 +21,7 @@ export class lobbies extends React.Component {
 		this.statechange_malus_size = this.statechange_malus_size.bind(this)
 		this.statechange_tableau_size = this.statechange_tableau_size.bind(this)
 		this.statechange_moves_counter = this.statechange_moves_counter.bind(this)
-		this.statechange_time_control = this.statechange_time_control.bind(this)
+		this.statechange_color = this.statechange_color.bind (this)
 		this.statechange_mode = this.statechange_mode.bind(this)
 		this.statechange_game_pon = this.statechange_game_pon.bind(this)
 		this.statechange_last_game_pon = this.statechange_last_game_pon.bind(this)
@@ -39,33 +38,28 @@ export class lobbies extends React.Component {
 						name: this.state.name,
 						secret: this.state.secret,
 						time: this.state.time > 0 ? Number(this.state.time) : 1,
-						time_control: this.state.time_control.includes("increment") ? (this.state.time_control + this.state.increment) : this.state.time_control,
+						increment:this.state.increment,
 						mode: this.state.mode,
 						moves_counter: this.state.moves_counter,
 						malus_size: Number(this.state.malus_size),
 						tableau_size: Number(this.state.tableau_size),
-						game_pon: this.state.last_game_pon
-					}
+						game_pon: this.state.last_game_pon,
+						initial_game_pon : this.state.game_pon,
+					},
+					color : this.state.color,
 				})
 			} else {
-				if (this.state.mode.includes("solo")) {
-					this.props.start_offline_game(this.state.game_pon, {
+				this.props.start_offline_game(
+					this.state.game_pon, 
+					{
 						username: this.props.username ? this.props.username : "",
 						elo: this.props.elo ? this.props.elo : ""
-					}, {
-						username: "",
+					}, 
+					{
+						username: this.state.mode.includes("ai") ? "AI" : "",
 						elo: ""
-					})
-				}
-				if (this.state.mode.includes("ai")) {
-					this.props.start_offline_game(this.state.game_pon, {
-						username: this.props.username ? this.props.username : "",
-						elo: this.props.elo ? this.props.elo : ""
-					}, {
-						username: "AI",
-						elo: ""
-					})
-				}
+					}, 
+					this.state.color ? this.state.color : "red")
 			}
 		}
 	}
@@ -75,25 +69,19 @@ export class lobbies extends React.Component {
 		})
 	}
 
-	statechange_time_control(time_control) {
-		if (time_control === "hourglass")
-			this.state.time = 90
-		if (time_control === "increment")
-			this.state.time = 60 * 25
-		if (time_control === "fixed_time")
-			this.state.time = 60
+	statechange_color(color) {
 		this.setState({
-			time_control: time_control,
+			color : color,
 			visible : false,
-			preview_color : "red"
 		}, () => {
 			this.setState({
-				game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+				game_pon: this.state.game_pon,
 			}, () => {
 				this.setState({visible:true})
 			})
 		})
 	}
+
 	statechange_name(name) {
 		if (name.length < 30)
 			this.setState({
@@ -111,10 +99,9 @@ export class lobbies extends React.Component {
 			this.setState({
 				moves_counter: moves_counter,
 				visible : false,
-				preview_color : "red"
 			}, () => {
 				this.setState({
-					game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+					game_pon: PON_from_game(game_from_settings(this.state)),
 				}, () => {
 					this.setState({visible:true})
 				})
@@ -124,10 +111,9 @@ export class lobbies extends React.Component {
 		this.setState({
 			time: time,
 			visible : false,
-			preview_color : "red"
 		}, () => {
 			this.setState({
-				game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+				game_pon: PON_from_game(game_from_settings(this.state)),
 			}, () => {
 				this.setState({visible:true})
 			})
@@ -135,13 +121,11 @@ export class lobbies extends React.Component {
 	}
 	statechange_increment(increment) {
 		this.setState({
-			time_control: "increment" + increment,
 			increment: increment,
 			visible : false,
-			preview_color : "red"
 		}, () => {
 			this.setState({
-				game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+				game_pon: PON_from_game(game_from_settings(this.state)),
 			}, () => {
 				this.setState({visible:true})
 			})
@@ -151,10 +135,9 @@ export class lobbies extends React.Component {
 		this.setState({
 			malus_size: malus_size,
 			visible : false,
-			preview_color : "red"
 		}, () => {
 			this.setState({
-				game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+				game_pon: PON_from_game(game_from_settings(this.state)),
 			}, () => {
 				this.setState({visible:true})
 			})
@@ -164,29 +147,42 @@ export class lobbies extends React.Component {
 		this.setState({
 			tableau_size: tableau_size,
 			visible : false,
-			preview_color : "red"
 		}, () => {
 			this.setState({
-				game_pon: PON_from_game(game_from_settings(this.state, this.state.mode === "solo" ? "red" : "")),
+				game_pon: PON_from_game(game_from_settings(this.state)),
 			}, () => {
 				this.setState({visible:true})
 			})
 		})
 	}
 	statechange_mode(mode) {
-		this.setState({
-			mode: mode,
-			visible : false,
-			preview_color : "red"
-		}, () => {
+		if(mode === this.state.mode)
 			this.setState({
-				game_pon: PON_from_game(game_from_settings(this.state, mode === "solo" ? "red" : "")),
+				mode: mode,
+				visible : false,
+				color : this.state.color 
 			}, () => {
-				this.setState({visible:true})
+				this.setState({
+					game_pon: PON_from_game(game_from_settings(this.state)),
+				}, () => {
+					this.setState({visible:true})
+				})
 			})
-		})
+		else
+			this.setState({
+				mode: mode,
+				color : this.state.mode === "solo" ? "red" : mode === "solo" ? "" : this.state.color,
+				visible : mode === "solo" ? false : true,
+			}, () => {
+				if(mode === "solo")
+					this.setState({
+						game_pon: this.state.game_pon,
+					}, () => {
+						this.setState({visible:true})
+					})
+			})
 	}
-	statechange(state) {
+	statechange(state, color) {
 		console.log(state)
 		var statecopy = {
 			...state
@@ -195,7 +191,7 @@ export class lobbies extends React.Component {
 		this.setState(statecopy, () => {
 			this.setState({
 				visible : false,
-				preview_color : "black"
+				color : color
 			}, () => {
 				this.setState({
 					game_pon: state.game_pon,
@@ -209,7 +205,6 @@ export class lobbies extends React.Component {
 	statechange_game_pon(game_pon) {
 		this.setState({
 			visible:false,
-			preview_color : "red"
 		}, () => {
 			this.setState({
 				game_pon: game_pon
@@ -233,14 +228,15 @@ export class lobbies extends React.Component {
 
 	render() {
 		return React.createElement('div', {
-				className: "unranked",
+				className: "casual",
 			},
-			React.createElement("article", {}, React.createElement("b", {}, 'unranked games')),
+			React.createElement("article", {}, React.createElement("b", {}, 'casual games')),
 			this.state.mounted ? React.createElement("div", {
 					style: {
 						zoom: "43%",
 						position: "absolute",
-						left: document.getElementById("clipboardpastebutton").getBoundingClientRect().right * 2
+						left: document.getElementById("clipboardpastebutton").getBoundingClientRect().right * 2,
+						top : "8.5vmax"
 					}
 				},
 				this.state.visible?React.createElement(game, {
@@ -250,7 +246,7 @@ export class lobbies extends React.Component {
 					red: {
 						username: ""
 					},
-					color: this.state.preview_color,
+					color: this.state.color ? this.state.color : "red",
 					game_PON: this.state.game_pon,
 					timer_red: this.state.time,
 					timer_black: this.state.time,
@@ -272,7 +268,7 @@ export class lobbies extends React.Component {
 			React.createElement("article", {}, '\u00A0'),
 			React.createElement(
 				name, {
-					details: this.state.name,
+					details: this.state,
 					statechange: this.statechange_name
 				}, ),
 			React.createElement("div", {
@@ -281,7 +277,7 @@ export class lobbies extends React.Component {
 				}
 			}, "\u00A0"),
 			React.createElement(secret, {
-				details: this.state.secret,
+				details: this.state,
 				statechange: this.statechange_secret
 			}, ),
 			React.createElement("div", {
@@ -289,29 +285,21 @@ export class lobbies extends React.Component {
 					fontSize: "50%"
 				}
 			}, "\u00A0"),
-			React.createElement(time_control, {
-				time_control: this.state.time_control,
-				statechange: this.statechange_time_control
+			React.createElement(color, {
+				details: this.state,
+				statechange_color: this.statechange_color
 			}, ),
 			React.createElement("div", {
 				style: {
 					fontSize: "50%"
-				}
+				},
 			}, "\u00A0"),
-			this.state.time_control.includes("increment") ? React.createElement(increment, {
+			React.createElement(increment, {
 				time: this.state.time,
 				increment: this.state.increment,
 				statechange_time: this.statechange_time,
 				statechange_increment: this.statechange_increment,
-			}, ) : "",
-			this.state.time_control === "hourglass" ? React.createElement(hourglass, {
-				details: this.state.time,
-				statechange: this.statechange_time
-			}, ) : "",
-			this.state.time_control === "fixed_time" ? React.createElement(fixed_time, {
-				details: this.state.time,
-				statechange: this.statechange_time
-			}, ) : "",
+			}, ) ,
 			React.createElement("div", {
 				style: {
 					fontSize: "50%"
@@ -354,7 +342,6 @@ export class lobbies extends React.Component {
 					fontSize: "50%"
 				},
 			}, "\u00A0"),
-
 
 			React.createElement(game_pon, {
 				statechange: this.statechange_game_pon,
@@ -429,8 +416,9 @@ function name(props) {
 				width: "360px",
 				fontSize: "100%"
 			},
+			disabled : props.details.mode != "unranked" ? true : false, 
 			type: "text",
-			value: props.details,
+			value: props.details.name,
 			onChange: event => props.statechange(event.target.value)
 		}),
 	)
@@ -446,8 +434,9 @@ function secret(props) {
 				fontSize: "100%",
 				width: "280px"
 			},
+			disabled : props.details.mode != "unranked" ? true : false, 
 			type: "password",
-			value: props.details,
+			value: props.details.secret,
 			onChange: event => props.statechange(event.target.value)
 		}),
 	)
@@ -466,7 +455,7 @@ function increment(props) {
 				onChange: event => props.statechange_time(event.target.value)
 			},
 			React.createElement('option', {
-				value: "60"
+				value: "3"
 			}, "1min"),
 			React.createElement('option', {
 				value: "120"
@@ -564,193 +553,6 @@ function increment(props) {
 			React.createElement('option', {
 				value: "60"
 			}, "60sec"),
-		),
-	)
-}
-
-function time_control(props) {
-
-
-	return React.createElement("div", {},
-		React.createElement('label', {}, "time control: "),
-		React.createElement('input', {
-			style: {
-				width: "15px",
-				height: "15px"
-			},
-			type: "radio",
-			name: "time_control",
-			value: "increment",
-			checked: props.time_control.includes("increment"),
-			onChange: () => props.statechange("increment")
-		}),
-		React.createElement('label', {
-			onClick: () => props.statechange("increment")
-		}, "increment\u00A0\u00A0"),
-		React.createElement('input', {
-			style: {
-				width: "15px",
-				height: "15px"
-			},
-			type: "radio",
-			name: "time_control",
-			value: "hourglass",
-			checked: props.time_control === "hourglass",
-			onChange: () => props.statechange("hourglass")
-		}),
-		React.createElement('label', {
-			onClick: () => props.statechange("hourglass")
-		}, "hourglass\u00A0\u00A0"),
-		React.createElement('input', {
-			style: {
-				width: "15px",
-				height: "15px"
-			},
-			type: "radio",
-			name: "time_control",
-			value: "fixed_time",
-			checked: props.time_control === "fixed_time",
-			onChange: () => props.statechange("fixed_time")
-		}),
-		React.createElement('label', {
-			onClick: () => props.statechange("fixed_time")
-		}, "fixed time\u00A0\u00A0"),
-	)
-}
-
-function fixed_time(props) {
-	return React.createElement("div", {},
-		React.createElement('label', {}, "time per turn "),
-		React.createElement('select', {
-				style: {
-					fontSize: "100%"
-				},
-				value: props.details,
-				onChange: event => props.statechange(event.target.value)
-			},
-			React.createElement('option', {
-				value: "5"
-			}, "5sec"),
-			React.createElement('option', {
-				value: "10"
-			}, "10sec"),
-			React.createElement('option', {
-				value: "15"
-			}, "15sec"),
-			React.createElement('option', {
-				value: "20"
-			}, "20sec"),
-			React.createElement('option', {
-				value: "25"
-			}, "25sec"),
-			React.createElement('option', {
-				value: "30"
-			}, "30sec"),
-			React.createElement('option', {
-				value: "40"
-			}, "40sec"),
-			React.createElement('option', {
-				value: "50"
-			}, "50sec"),
-			React.createElement('option', {
-				value: "60"
-			}, "60sec"),
-			React.createElement('option', {
-				value: "70"
-			}, "70sec"),
-			React.createElement('option', {
-				value: "80"
-			}, "80sec"),
-			React.createElement('option', {
-				value: "90"
-			}, "90sec"),
-			React.createElement('option', {
-				value: "100"
-			}, "100sec"),
-			React.createElement('option', {
-				value: "120"
-			}, "120sec"),
-			React.createElement('option', {
-				value: "150"
-			}, "150sec"),
-			React.createElement('option', {
-				value: "180"
-			}, "180sec"),
-			React.createElement('option', {
-				value: "240"
-			}, "240sec"),
-			React.createElement('option', {
-				value: "300"
-			}, "300sec"),
-		),
-	)
-}
-
-function hourglass(props) {
-
-	return React.createElement("div", {},
-		React.createElement('label', {}, "hourglass time "),
-		React.createElement('select', {
-				style: {
-					fontSize: "100%"
-				},
-				value: props.details,
-				onChange: event => props.statechange(event.target.value)
-			},
-			React.createElement('option', {
-				value: "5"
-			}, "5sec"),
-			React.createElement('option', {
-				value: "10"
-			}, "10sec"),
-			React.createElement('option', {
-				value: "15"
-			}, "15sec"),
-			React.createElement('option', {
-				value: "20"
-			}, "20sec"),
-			React.createElement('option', {
-				value: "25"
-			}, "25sec"),
-			React.createElement('option', {
-				value: "30"
-			}, "30sec"),
-			React.createElement('option', {
-				value: "40"
-			}, "40sec"),
-			React.createElement('option', {
-				value: "50"
-			}, "50sec"),
-			React.createElement('option', {
-				value: "60"
-			}, "60sec"),
-			React.createElement('option', {
-				value: "70"
-			}, "70sec"),
-			React.createElement('option', {
-				value: "80"
-			}, "80sec"),
-			React.createElement('option', {
-				value: "90"
-			}, "90sec"),
-			React.createElement('option', {
-				value: "100"
-			}, "100sec"),
-			React.createElement('option', {
-				value: "120"
-			}, "120sec"),
-			React.createElement('option', {
-				value: "150"
-			}, "150sec"),
-			React.createElement('option', {
-				value: "180"
-			}, "180sec"),
-			React.createElement('option', {
-				value: "240"
-			}, "240sec"),
-			React.createElement('option', {
-				value: "300"
-			}, "300sec"),
 		),
 	)
 }
@@ -995,18 +797,67 @@ function mode(props) {
 	)
 }
 
+function color (props) {
+	return React.createElement("div", {},
+		React.createElement('label', {}, "color:\u00A0\u00A0"),
+		React.createElement('input', {
+			style: {
+				width: "15px",
+				height: "15px"
+			},
+			name: "color",
+			type: "radio",
+			id: "color_checkbox",
+			disabled : props.details.mode === "solo" ? true : false,
+			checked: props.details.color === "red",
+			onClick: () => {
+				props.statechange_color("red")
+			},
+			onChange: () => {}
+		}),
+		React.createElement('label', {
+			onClick: () => {
+				if(props.details.mode != "solo")
+					props.statechange_color("red")
+			},
+		}, "red\u00A0\u00A0"),
+		React.createElement('input', {
+			style: {
+				width: "15px",
+				height: "15px"
+			},
+			name: "color",
+			type: "radio",
+			id: "color_checkbox",
+			disabled : props.details.mode === "solo" ? true : false,
+			checked: props.details.color === "black",
+			onClick: () => {
+				props.statechange_color("black")
+			},
+			onChange: () => {}
+		}),
+		React.createElement('label', {
+			onClick: () => {
+				if(props.details.mode != "solo")
+					props.statechange_color("black")
+			},
+		}, "blue\u00A0\u00A0"),
+	)
+}
+
+
 function pending_rooms(props) {
-	function join_click(redid, secret) {
-		if (redid != socket.id) {
+	function join_click(socketid, secret) {
+		if (socketid != socket.id) {
 			if (secret)
 				socket.emit("client_join", {
-					redid: redid,
+					socketid: socketid,
 					cookie: document.cookie,
 					secret: prompt("Enter Room Password")
 				})
 			else
 				socket.emit("client_join", {
-					redid: redid,
+					socketid: socketid,
 					cookie: document.cookie
 				})
 		}
@@ -1021,10 +872,10 @@ function pending_rooms(props) {
 						cursor: "pointer"
 					},
 				}, React.createElement('u', {
-					onClick: () => props.statechange(room.settings)
+					onClick: () => props.statechange(room.settings, room.red_user ? "black" : "red")
 				}, room.settings.name),
-				room.settings.secret ? " 🔒" : " ", room.red_user.initial_socketid != socket.id && room.red_user.socketid_cookie_on_reation != getCookie("socketid") ? React.createElement('button', {
-					onClick: () => join_click(room.red_user.initial_socketid, room.settings.secret),
+				room.settings.secret ? " 🔒" : " ",( room.red_user ?( room.red_user.initial_socketid != socket.id && room.red_user.socketid_cookie_on_reation != getCookie("socketid") ):  (room.black_user.initial_socketid != socket.id && room.black_user.socketid_cookie_on_reation != getCookie("socketid")))   ? React.createElement('button', {
+					onClick: () => join_click(room.red_user ? room.red_user.initial_socketid :  room.black_user.initial_socketid, room.settings.secret),
 					style: {
 						cursor: "pointer"
 					}
@@ -1041,8 +892,7 @@ function getCookie(n) {
 	let a = `; ${document.cookie}`.match(`;\\s*${n}=([^;]+)`);
 	return a ? a[1] : '';
 }
-
-function game_from_settings(settings, startcolor) {
+function game_from_settings(settings) {
 	var game = {
 		redmalus: [],
 		redstock: [],
@@ -1071,32 +921,130 @@ function game_from_settings(settings, startcolor) {
 		moves_counter: settings.moves_counter,
 		lowest_malus_red: settings.malus_size,
 		lowest_malus_black: settings.malus_size,
-		time_control: settings.time_control,
-		timer_red: settings.time_control === "hourglass" ? (settings.time / 2) : settings.time,
-		timer_black: settings.time_control === "hourglass" ? (settings.time / 2) : settings.time,
-		abort_counter: 0,
+		timer_red: settings.time,
+		timer_black: settings.time,
+		increment: settings.increment,
 		turn_counter: 0,
 	}
 	var reddeck = shuffle(freshDeck("red"))
 	for (var ms = 0; ms < settings.malus_size; ms++) {
-		while (reddeck[reddeck.length - 1].value === 13 || reddeck[reddeck.length - 1].value === 1) {
+		while (reddeck[reddeck.length - 1].value === 13 || reddeck[reddeck.length - 1].value === 1 || (ms < parseInt(settings.malus_size/2) && reddeck[reddeck.length - 1].value < 5)) {
 			reddeck = shuffle(reddeck)
 		}
 		var card = reddeck.pop()
 		game.redmalus.push(card)
 		game.blackmalus.push(new Card("black", card.suit, card.value))
 	}
-	game.turn = shuffle(["red", "black"])[0]
-	if (startcolor)
-		game.turn = startcolor
-	for (var tableau_nr = 0; tableau_nr < 4; tableau_nr++)
-		for (var ts = 0; ts < settings.tableau_size; ts++) {
+	game.turn = "red"
 
-			var card = reddeck.pop()
-			game["redtableau" + tableau_nr].push(card)
-			game["blacktableau" + tableau_nr].push(new Card("black", card.suit, card.value))
-		}
-
+	if(settings.tableau_size > 0) {
+		var check = false
+		do {
+			for (var tableau_nr = 0; tableau_nr < 4; tableau_nr++)
+				for (var ts = 0; ts < settings.tableau_size; ts++) {
+					var card = reddeck.pop()
+					game["redtableau" + tableau_nr].push(card)
+					game["blacktableau" + tableau_nr].push(new Card("black", card.suit, card.value))
+				}
+				var counter = 0
+				for(var i = 0; i < 4; i++)  {
+					if(game["redtableau"+i][game["redtableau"+i].length-1].value === game.redmalus[game.redmalus.length-1].value)
+						counter++
+					if( game["redtableau"+i][game["redtableau"+i].length-1].value-1 === game.redmalus[game.redmalus.length-1].value || game["redtableau"+i][game["redtableau"+i].length-1].value+1 === game.redmalus[game.redmalus.length-1].value) {
+						if(game["redtableau"+i][game["redtableau"+i].length-1].suit === game.redmalus[game.redmalus.length-1].suit)
+							counter++
+					}
+					if( game["redtableau"+i][game["redtableau"+i].length-1].value-1 === game.redmalus[game.redmalus.length-1].value) {
+						if(game["redtableau"+i][game["redtableau"+i].length-1].suit === "hearts" || game["redtableau"+i][game["redtableau"+i].length-1].suit === "diamonds")
+							if(game.redmalus[game.redmalus.length-1].suit === "clubs" || game.redmalus[game.redmalus.length-1].suit === "spades")
+								counter++
+						if(game["redtableau"+i][game["redtableau"+i].length-1].suit === "clubs" || game["redtableau"+i][game["redtableau"+i].length-1].suit === "spades")
+							if(game.redmalus[game.redmalus.length-1].suit === "hearts" || game.redmalus[game.redmalus.length-1].suit === "diamonds")
+								counter++
+					}
+					if(game["redtableau"+i][game["redtableau"+i].length-1].value === 1)
+						counter++
+				}	
+				if(settings.tableau_size > 1)
+					for(var i = 0; i < 4; i++)  {
+						if(game["redtableau"+i][game["redtableau"+i].length-2].value === game.redmalus[game.redmalus.length-1].value)
+							counter++
+						if( game["redtableau"+i][game["redtableau"+i].length-2].value-1 === game.redmalus[game.redmalus.length-1].value || game["redtableau"+i][game["redtableau"+i].length-2].value+1 === game.redmalus[game.redmalus.length-1].value) {
+							if(game["redtableau"+i][game["redtableau"+i].length-2].suit === game.redmalus[game.redmalus.length-1].suit)
+								counter++
+						}
+						if( game["redtableau"+i][game["redtableau"+i].length-2].value-1 === game.redmalus[game.redmalus.length-1].value) {
+							if(game["redtableau"+i][game["redtableau"+i].length-2].suit === "hearts" || game["redtableau"+i][game["redtableau"+i].length-2].suit === "diamonds")
+								if(game.redmalus[game.redmalus.length-1].suit === "clubs" || game.redmalus[game.redmalus.length-1].suit === "spades")
+									counter++
+							if(game["redtableau"+i][game["redtableau"+i].length-2].suit === "clubs" || game["redtableau"+i][game["redtableau"+i].length-2].suit === "spades")
+								if(game.redmalus[game.redmalus.length-1].suit === "hearts" || game.redmalus[game.redmalus.length-1].suit === "diamonds")
+									counter++
+						}
+						if(game["redtableau"+i][game["redtableau"+i].length-2].value === 1)
+							counter++
+					}	
+				if(settings.tableau_size > 2)
+					for(var i = 0; i < 4; i++)  {
+						if(game["redtableau"+i][game["redtableau"+i].length-3].value === game.redmalus[game.redmalus.length-1].value)
+							counter++
+						if( game["redtableau"+i][game["redtableau"+i].length-3].value-1 === game.redmalus[game.redmalus.length-1].value || game["redtableau"+i][game["redtableau"+i].length-3].value+1 === game.redmalus[game.redmalus.length-1].value) {
+							if(game["redtableau"+i][game["redtableau"+i].length-3].suit === game.redmalus[game.redmalus.length-1].suit)
+								counter++
+						}
+						if( game["redtableau"+i][game["redtableau"+i].length-3].value-1 === game.redmalus[game.redmalus.length-1].value) {
+							if(game["redtableau"+i][game["redtableau"+i].length-3].suit === "hearts" || game["redtableau"+i][game["redtableau"+i].length-3].suit === "diamonds")
+								if(game.redmalus[game.redmalus.length-1].suit === "clubs" || game.redmalus[game.redmalus.length-1].suit === "spades")
+									counter++
+							if(game["redtableau"+i][game["redtableau"+i].length-3].suit === "clubs" || game["redtableau"+i][game["redtableau"+i].length-3].suit === "spades")
+								if(game.redmalus[game.redmalus.length-1].suit === "hearts" || game.redmalus[game.redmalus.length-1].suit === "diamonds")
+									counter++
+						}
+					}	
+				if(counter === 0) {
+					check = true
+				}
+				if(check && reddeck.length > 0)   {
+					counter = 0
+					if(reddeck[reddeck.length-1].value === game.redmalus[game.redmalus.length-1].value)
+						counter++
+					if( reddeck[reddeck.length-1].value-1 === game.redmalus[game.redmalus.length-1].value || reddeck[reddeck.length-1].value+1 === game.redmalus[game.redmalus.length-1].value) 
+						if(reddeck[reddeck.length-1].suit === game.redmalus[game.redmalus.length-1].suit)
+							counter++
+					if(reddeck[reddeck.length-1].value === 1)
+						counter++
+		
+					if(reddeck.length > 1) {
+						if(reddeck[reddeck.length-2].value === game.redmalus[game.redmalus.length-1].value)
+							counter++
+						if( reddeck[reddeck.length-2].value-1 === game.redmalus[game.redmalus.length-1].value || reddeck[reddeck.length-2].value+1 === game.redmalus[game.redmalus.length-1].value) 
+							if(reddeck[reddeck.length-2].suit === game.redmalus[game.redmalus.length-1].suit)
+								counter++
+						if(reddeck.length > 2) {
+							if(reddeck[reddeck.length-3].value === game.redmalus[game.redmalus.length-1].value)
+								counter++
+							if( reddeck[reddeck.length-3].value-1 === game.redmalus[game.redmalus.length-1].value || reddeck[reddeck.length-3].value+1 === game.redmalus[game.redmalus.length-1].value) 
+								if(reddeck[reddeck.length-3].suit === game.redmalus[game.redmalus.length-1].suit)
+									counter++
+						}
+					}
+					if(counter != 0) {
+						check = false
+					}
+				}
+				if(!check) {
+					for(var p = 0; p < 2; p++)
+						for(var i = 0; i < 4; i++)  
+							for(var j = 0; j < settings.tableau_size; j++) {
+								if(p === 0)
+									reddeck.push(game["red" + "tableau"+i].pop())
+								if(p === 1)
+									game["black" + "tableau"+i].pop()
+							}
+					reddeck = shuffle(reddeck)
+				}
+		} while (!check)
+	}
 	game.redstock = reddeck
 	for (var c of reddeck)
 		game.blackstock.push(new Card("black", c.suit, c.value))
