@@ -186,7 +186,7 @@ export function game_stack(props) {
 
 				paddingLeft: '.5vmax',
 				paddingRight: '.5vmax',
-				minWidth: "4.7vmax",
+				minWidth: "4.5vmax",
 				height: '7.6vmax',
 				maxHeight: '15vmin',
 				backgroundColor: props.color

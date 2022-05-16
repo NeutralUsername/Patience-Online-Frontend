@@ -75,6 +75,7 @@ export class community extends React.Component {
 		if (this.state.content === "search") {
 			components.push(React.createElement(community_search, {
 				key: index++,
+				start_offline_game: this.props.start_offline_game,
 			}))
 		}
 		return React.createElement('div', {

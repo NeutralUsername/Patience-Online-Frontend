@@ -91,7 +91,6 @@ export class game extends React.Component {
 			})
 
 			socket.on("game_update", (data) => {
-				console.log(data)
 				if (this.state.ghost_dragging)
 					document.getElementById(PON_from_card(this.state.ghost_dragging)).style.opacity = 1
 				this.state.ghost_dragging = false

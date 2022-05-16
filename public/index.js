@@ -249,7 +249,8 @@ export class Index extends React.Component {
 					id: "community",
 					key: index++,
 					active_rooms: this.state.active_rooms,
-					leaderboard: this.state.leaderboard
+					leaderboard: this.state.leaderboard,
+					start_offline_game: this.start_offline_game,
 				})
 			)
 		if (this.state.content === "ranked")
@@ -296,17 +297,6 @@ export class Index extends React.Component {
 					user : this.state.user,
 					player : true,
 					history: this.state.history,
-					start_offline_game: this.start_offline_game,
-					statechange_content: this.statechange_content,
-				})
-			)
-		if (this.state.content === "profile")
-			components.push(
-				React.createElement(profile, {
-					key: index++,
-					user : this.state.profile_user,
-					player : false,
-					history: this.state.profile_history,
 					start_offline_game: this.start_offline_game,
 					statechange_content: this.statechange_content,
 				})

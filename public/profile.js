@@ -44,7 +44,7 @@ export class profile extends React.Component {
 					className: "history"
 				}, this.props.history ? this.props.history.map((game, index) => {
 					var result = game.PON.substring(game.PON.indexOf("=") + 1, game.PON.length)
-					var player_color = game.r === this.props.username ? "red" : "black"
+					var player_color = game.r === this.props.user.username ? "red" : "black"
 					return React.createElement("li", {
 							key: index,
 						}, React.createElement('u', {}, game.r === this.props.user.username ? ("vs. " + (game.b ? game.b : "guest")) : (" vs. " + (game.r ? game.r : "guest"))),
@@ -53,13 +53,16 @@ export class profile extends React.Component {
 						React.createElement("i", {}, "\u00A0" + game.started, ),
 						"\u00A0",
 						React.createElement('button', {
-							onClick: () => this.props.start_offline_game(game.PON, {
-								username: game.r,
-								elo: game.re
-							}, {
-								username: game.b,
-								elo: game.be
-							}),
+							onClick: () => this.props.start_offline_game(
+								game.PON, {
+									username: game.r,
+									elo: game.re
+								}, {
+									username: game.b,
+									elo: game.be
+								}, 
+									"red"
+							),
 							style: {
 								cursor: "pointer"
 							}
