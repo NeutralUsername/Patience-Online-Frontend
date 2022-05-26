@@ -1,5 +1,5 @@
 # Patience-Online-Frontend
-https://patienceonline.com/  website currently offline in favor if nodge  
+https://patienceonline.com/  website currently redirects to my new game nodge as I only own one AWS ec2 instance    
 
 ## The goal of the game is to be the first player to get rid of all your Malus cards.
 
