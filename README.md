@@ -1,5 +1,5 @@
 # Patience-Online-Frontend
-https://patienceonline.com/
+https://patienceonline.com/  website currently offline in favor if nodge  
 
 ## The goal of the game is to be the first player to get rid of all your Malus cards.
 
