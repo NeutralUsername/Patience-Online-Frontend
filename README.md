@@ -32,3 +32,6 @@ Moves to Foundation and moves from Stock are excluded from this and free.
 During the first turn you can not Move cards to your opponents side.
 
 ![image](https://user-images.githubusercontent.com/39095721/171749601-7af3e371-dcf4-47ce-be79-821fdf1561b5.png)
+
+![image](https://user-images.githubusercontent.com/39095721/171749685-f3d2214c-9f28-42a7-a5f8-b98ad7788f79.png)
+
